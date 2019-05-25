@@ -9,7 +9,9 @@ from __future__ import absolute_import
 import cv2
 import os
 import numpy as np
-import mayavi.mlab as mlab
+#import mayavi.mlab as mlab
+
+from kitti_object import Object
 
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(FILE_PATH)
@@ -26,6 +28,18 @@ def load_pointcloud(pointcloud_file_name):
     pc = pc.reshape((-1, 4))
     return pc
 
+def load_label(label_file_name):
+    lines = []
+    for line in open(label_file_name):
+        # remove line feed character
+        line = line.rstrip()
+        lines.append(line.rstrip())
+    objects = []
+    for line in lines:
+        obj = Object(line)
+        objects.append(obj)
+    return objects
+
 if __name__ == '__main__':
     image = load_image(KITTI_TRAIN_PATH + '/image_2/000000.png')
     window_name = 'test'
@@ -35,5 +49,9 @@ if __name__ == '__main__':
     #cv2.destroyWindow(window_name)
 
     pc = load_pointcloud(KITTI_TRAIN_PATH + '/velodyne/000000.bin')
-    mlab.clf()
-    mlab.points3d(pc[:,0], pc[:,1], pc[:,2], pc[:,3])
+    #mlab.clf()
+    #mlab.points3d(pc[:,0], pc[:,1], pc[:,2], pc[:,3])
+
+    objects = load_label(KITTI_TRAIN_PATH + '/label_2/000000.txt')
+    for obj in objects:
+        obj.print_data()
