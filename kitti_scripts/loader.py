@@ -81,11 +81,14 @@ class Calibration:
 
     def translate_velodyne_to_p2_image(self, p):
         # velodyne xyz(n, 3) to p2 uv(n, 2)
-        p = self.add_dimension(p)
-        p = p.transpose()
-        p = self.velodyne_to_camera.dot(p)
-        p = p.transpose()[:, 0:3]
-        p = translate_p0_camera_to_p2_image(p)
+        p = self.translate_velodyne_to_p0_camera(p)
+        p = self.translate_p0_camera_to_p2_image(p)
+        return p
+
+    def translate_velodyne_to_p2_camera(self, p):
+        # velodyne xyz(n, 3) to p2 xyz(n, 3)
+        p = self.translate_velodyne_to_p0_camera(p)
+        p = self.translate_p0_camera_to_p2_camera(p)
         return p
 
     def translate_velodyne_to_p0_camera(self, p):
@@ -95,19 +98,27 @@ class Calibration:
         p = self.velodyne_to_camera.dot(p)
         return p.transpose()[:, 0:3]
 
-
-    def translate_p0_camera_to_p2_image(self, p):
-        # p0 xyz(n, 3) to p2 uv(n, 2)
+    def translate_p0_camera_to_p2_camera(self, p):
+        # p0 xyz(n, 3) to p2 xyz(n, 3)
         p = self.add_dimension(p)
         p = p.transpose()
         p = self.P0_R.dot(p)
-        p = p.transpose()[:, 0:3]
+        return p.transpose()[:, 0:3]
+
+    def translate_p0_camera_to_p2_image(self, p):
+        # p0 xyz(n, 3) to p2 uv(n, 2)
+        p = self.translate_p0_camera_to_p2_camera(p)
         p = self.project_3d_to_2d(p)
         return p
 
     def translate_p2_image_to_p0_camera(self, p):
         # p2 uvd(n, 3) to p0 xyz(n, 3)
         p = self.project_2d_to_3d(p)
+        p = self.translate_p2_camera_to_p0_camera(p)
+        return p
+
+    def translate_p2_camera_to_p0_camera(self, p):
+        # p2 xyz(n, 3) to p0 xyz(n, 3)
         p = self.add_dimension(p)
         p = p.transpose()
         p = np.linalg.inv(self.P0_R).dot(p)
@@ -115,12 +126,22 @@ class Calibration:
 
     def translate_p2_image_to_velodyne(self, p):
         # p2 uvd(n, 3) to velodyne xyz(n, 3)
-        p = self.translate_p2_image_to_p0_camera(p)
+        p = self.project_2d_to_3d(p)
+        p = self.translate_p2_camera_to_velodyne(p)
+        return p
+
+    def translate_p2_camera_to_velodyne(self, p):
+        # p2 xyz(n, 3) to velodyne xyz(n, 3)
+        p = self.translate_p2_camera_to_p0_camera(p)
+        p = self.translate_p0_camera_to_velodyne(p)
+        return p
+
+    def translate_p0_camera_to_velodyne(self, p):
+        # p0 xyz(n, 3) to velodyne xyz(n, 3)
         p = self.add_dimension(p)
         p = p.transpose()
         p = np.linalg.inv(self.velodyne_to_camera).dot(p)
         return p.transpose()[:, 0:3]
-        pass
 
     def project_3d_to_2d(self, p):
         # p2 xyz(n, 3) to p2 uv(n, 2)
@@ -157,7 +178,7 @@ class Calibration:
 
 # for test
 if __name__ == '__main__':
-    test_index = '000005'
+    test_index = '000000'
     image = load_image(KITTI_TRAIN_PATH + '/image_2/' + test_index + '.png')
     print(image.shape)
     #window_name = 'test'
@@ -176,17 +197,15 @@ if __name__ == '__main__':
         obj.print_data()
 
     c = Calibration(KITTI_TRAIN_PATH + '/calib/' + test_index + '.txt')
-    uv = c.translate_p0_camera_to_p2_image(objects[0].bb3d.position.reshape(-1, 3))
-    print('in p2 uv')
-    print(uv)
-    uvd = np.hstack((uv[0], [objects[0].bb3d.position[2]]))
-    uvd = uvd.reshape(-1, 3)
-    xyz = c.translate_p2_image_to_p0_camera(uvd)
-    print('in p0 xyz')
-    print(xyz)
-    xyz_ = c.translate_p2_image_to_velodyne(uvd)
-    print('in velodyne')
-    print(xyz_)
-    xyz__ = c.translate_velodyne_to_p0_camera(xyz_)
-    print('in p0 camera')
-    print(xyz__)
+    p = objects[0].bb3d.position.reshape(-1, 3)
+    print(p)
+    p=c.project_3d_to_2d(p)
+    print(p)
+    p = np.hstack((p, objects[0].bb3d.position[2].reshape(-1, 1)))
+    print(p)
+    p=c.project_2d_to_3d(p)
+    print(p)
+    p=c.translate_p2_camera_to_velodyne(p)
+    print(p)
+    p=c.translate_velodyne_to_p2_image(p)
+    print(p)
