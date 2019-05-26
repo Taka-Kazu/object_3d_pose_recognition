@@ -25,6 +25,7 @@ class Object:
 
         class BoundingBox2d:
             def __init__(self, data):
+                # p2 image
                 self.bb = np.array(data)
                 self.xmin = self.bb[0]
                 self.xmax = self.bb[1]
@@ -35,10 +36,11 @@ class Object:
 
         class BoundingBox3d:
             def __init__(self, data_size, data_xyz, yaw_arround_camera_y):
+                # p0 camera
                 self.h = data_size[0]
                 self.w = data_size[1]
                 self.l = data_size[2]
-                self.position = (data_xyz[0], data_xyz[1], data_xyz[2])
+                self.position = np.array(data_xyz)
                 self.yaw = yaw_arround_camera_y
 
         self.bb3d = BoundingBox3d(data[8:11], data[11:14], data[14])
