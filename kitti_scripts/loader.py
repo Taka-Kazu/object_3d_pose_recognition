@@ -11,6 +11,9 @@ import os
 import numpy as np
 #import mayavi.mlab as mlab
 from pprint import pprint
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import argparse
 
 from kitti_object import Object
 
@@ -178,19 +181,41 @@ class Calibration:
 
 # for test
 if __name__ == '__main__':
-    test_index = '000000'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--test_file_index', help='default: 000000', default='000000')
+    parser.add_argument('--show_image', action='store_true')
+    parser.add_argument('--show_pointcloud', action='store_true')
+    args = parser.parse_args()
+
+    test_index = args.test_file_index
+
     image = load_image(KITTI_TRAIN_PATH + '/image_2/' + test_index + '.png')
     print(image.shape)
-    #window_name = 'test'
-    #cv2.namedWindow(window_name)
-    #cv2.imshow(window_name, image)
-    #cv2.waitKey(0)
-    #cv2.destroyWindow(window_name)
+    if args.show_image:
+        window_name = 'test'
+        cv2.namedWindow(window_name)
+        cv2.imshow(window_name, image)
+        cv2.waitKey(0)
+        cv2.destroyWindow(window_name)
 
     pc = load_pointcloud(KITTI_TRAIN_PATH + '/velodyne/' + test_index + '.bin')
     print(pc.shape)
-    #mlab.clf()
-    #mlab.points3d(pc[:,0], pc[:,1], pc[:,2], pc[:,3])
+    if args.show_pointcloud:
+        #mlab.clf()
+        #mlab.points3d(pc[:,0], pc[:,1], pc[:,2], pc[:,3])
+        #raw_input()
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        cloud = pc.transpose()
+        ax.scatter3D(cloud[0], cloud[1], cloud[2], s=0.05)
+        ax.set_title('pointcloud in ' + test_index)
+        ax.set_xlim(-50, 50)
+        ax.set_ylim(-50, 50)
+        ax.set_zlim(-50, 50)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+        plt.show()
 
     objects = load_label(KITTI_TRAIN_PATH + '/label_2/' + test_index + '.txt')
     for obj in objects:
