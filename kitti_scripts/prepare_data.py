@@ -9,7 +9,6 @@ from __future__ import absolute_import
 import cv2
 import os
 import numpy as np
-#import mayavi.mlab as mlab
 from pprint import pprint
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -31,6 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_file_index', help='default: 000000', default='000000')
     parser.add_argument('--show_image', action='store_true')
     parser.add_argument('--show_pointcloud', action='store_true')
+    parser.add_argument('--use_mayavi', action='store_true')
     args = parser.parse_args()
 
     test_index = args.test_file_index
@@ -47,21 +47,24 @@ if __name__ == '__main__':
     pc = loader.load_pointcloud(KITTI_TRAIN_PATH + '/velodyne/' + test_index + '.bin')
     print(pc.shape)
     if args.show_pointcloud:
-        #mlab.clf()
-        #mlab.points3d(pc[:,0], pc[:,1], pc[:,2], pc[:,3])
-        #raw_input()
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        cloud = pc.transpose()
-        ax.scatter3D(cloud[0], cloud[1], cloud[2], s=0.05)
-        ax.set_title('pointcloud in ' + test_index)
-        ax.set_xlim(-50, 50)
-        ax.set_ylim(-50, 50)
-        ax.set_zlim(-50, 50)
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
-        plt.show()
+        if not args.use_mayavi:
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            cloud = pc.transpose()
+            ax.scatter3D(cloud[0], cloud[1], cloud[2], s=0.05)
+            ax.set_title('pointcloud in ' + test_index)
+            ax.set_xlim(-50, 50)
+            ax.set_ylim(-50, 50)
+            ax.set_zlim(-50, 50)
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            ax.set_zlabel('z')
+            plt.show()
+        else:
+            import mayavi.mlab as mlab
+            mlab.clf()
+            mlab.points3d(pc[:,0], pc[:,1], pc[:,2], pc[:,3])
+            raw_input()
 
     objects = loader.load_label(KITTI_TRAIN_PATH + '/label_2/' + test_index + '.txt')
     for obj in objects:
