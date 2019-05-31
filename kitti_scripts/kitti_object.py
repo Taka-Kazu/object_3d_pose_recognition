@@ -2,6 +2,12 @@
 #! coding utf-8
 
 import numpy as np
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from utils.bounding_box_2d import BoundingBox2d
+from utils.bounding_box_3d import BoundingBox3d
 
 class Object:
     def __init__(self, data):
@@ -23,25 +29,7 @@ class Object:
         self.visibility = data[2]
         self.object_direction_from_camera = data[3]
 
-        class BoundingBox2d:
-            def __init__(self, data):
-                # p2 image
-                self.bb = np.array(data)
-                self.xmin = self.bb[0]
-                self.xmax = self.bb[1]
-                self.ymin = self.bb[2]
-                self.ymax = self.bb[3]
-
         self.bb2d = BoundingBox2d(data[4:8])
-
-        class BoundingBox3d:
-            def __init__(self, data_size, data_xyz, yaw_arround_camera_y):
-                # p0 camera
-                self.h = data_size[0]
-                self.w = data_size[1]
-                self.l = data_size[2]
-                self.position = np.array(data_xyz)
-                self.yaw = yaw_arround_camera_y
 
         self.bb3d = BoundingBox3d(data[8:11], data[11:14], data[14])
 
