@@ -70,6 +70,9 @@ class EuclideanClustering:
                     count += 1
             if count == 0:
                 break
+        for indices in cluster_indices_list[:]:
+            if len(indices) < self.min_cluster_size:
+                cluster_indices_list.remove(indices)
         return cluster_indices_list
 
 if __name__=='__main__':
