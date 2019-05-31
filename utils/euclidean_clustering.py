@@ -80,4 +80,7 @@ if __name__=='__main__':
     pc = 3 * (np.random.rand(20, 3) - 0.5)
 
     ec.set_params(1, 3, 6, 10)
-    pprint(ec.calculate(pc))
+    clusters = ec.calculate(pc)
+    pprint(clusters)
+    largest_cluster = pc[clusters[0]]
+    pprint(largest_cluster)
