@@ -20,6 +20,12 @@ class EuclideanClustering:
         self.max_cluster_size = max_cluster_size
         self.leaf_size = leaf_size
 
+    def is_computed_index(self, index, indices_list):
+        for indices in indices_list:
+            if index in indices:
+                return True
+        return False
+
     def calculate(self, data):
         '''
         data: ndarray, n * 3
@@ -31,25 +37,28 @@ class EuclideanClustering:
         queue = []
         cluster_indices_list = []
         for i in range(self.data.shape[0]):
-            computed_flag = False
-            for cluster_indices in cluster_indices_list:
-                if i in cluster_indices:
-                    computed_flag = True
-                    break
+            computed_flag = self.is_computed_index(i, cluster_indices_list)
             if not computed_flag:
                 queue.append(i)
+                max_flag = False
                 for j in queue:
                     p = self.data[j]
                     indices = self.tree.query_ball_point(p, self.tolerance)
                     for index in indices:
-                        if not (index in queue):
+                        if not (index in queue) and not self.is_computed_index(index, cluster_indices_list):
                             #print('index was added to queue')
                             queue.append(index)
+                            if len(queue) == self.max_cluster_size:
+                                max_flag = True
+                                break
                         else:
                             #print('queue already has this index')
                             pass
+                    if max_flag:
+                        break
                 cluster_indices_list.append(queue)
                 queue = []
+        # sort
         cluster_num = len(cluster_indices_list)
         while True:
             count = 0
