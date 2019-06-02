@@ -8,6 +8,7 @@ from __future__ import absolute_import
 
 import cv2
 import os
+import sys
 import numpy as np
 from pprint import pprint
 import matplotlib.pyplot as plt
@@ -18,11 +19,32 @@ from kitti_object import Object
 from calibration import Calibration
 import loader
 
+# add project root dir to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(FILE_PATH)
 KITTI_PATH = ROOT_DIR + '/dataset/kitti'
 KITTI_TRAIN_PATH = KITTI_PATH + '/training'
 KITTI_TEST_PATH = KITTI_PATH + '/test'
+
+def plot_pointcloud(cloud):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    cloud = cloud.transpose()
+    ax.scatter3D(cloud[0], cloud[1], cloud[2], s=0.05)
+    ax.axis('equal')
+    ax.set_title('pointcloud in ' + test_index)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+    plt.show()
+
+def in_hull(p, hull):
+    from scipy.spatial import Delaunay
+    if not isinstance(hull, Delaunay):
+        hull = Delaunay(hull)
+    return hull.find_simplex(p) >= 0
 
 # for test
 if __name__ == '__main__':
@@ -48,16 +70,7 @@ if __name__ == '__main__':
     print(pc.shape)
     if args.show_pointcloud:
         if not args.use_mayavi:
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
-            cloud = pc.transpose()
-            ax.scatter3D(cloud[0], cloud[1], cloud[2], s=0.05)
-            ax.axis('equal')
-            ax.set_title('pointcloud in ' + test_index)
-            ax.set_xlabel('x')
-            ax.set_ylabel('y')
-            ax.set_zlabel('z')
-            plt.show()
+            plot_pointcloud(pc)
         else:
             import mayavi.mlab as mlab
             mlab.clf()
@@ -82,3 +95,22 @@ if __name__ == '__main__':
     print(p)
     p=c.translate_velodyne_to_p2_image(p)
     print(p)
+
+    pc = pc[:, 0:3]
+    projected_pointcloud = c.translate_velodyne_to_p2_image(pc)
+    for obj in objects:
+        if obj.type =='Pedestrian':
+            obj.print_data()
+            indices = in_hull(projected_pointcloud, obj.bb2d.get_hull())
+            print('%d points' % projected_pointcloud[indices].shape[0])
+            object_pc = np.hstack((projected_pointcloud[indices], pc[indices, 0:1]))
+            object_pc = c.translate_p2_image_to_p0_camera(object_pc)
+            # delete z < 0 (behind camera)
+            object_pc = np.delete(object_pc, np.where(object_pc[:, 2] < 0), axis=0)
+            print(object_pc)
+            print('%d points' % object_pc.shape[0])
+            #object_pc = c.translate_p2_image_to_velodyne(object_pc)
+            #object_pc = np.delete(object_pc, np.where(object_pc[:, 0] < 0), axis=0)
+            if args.show_pointcloud:
+                plot_pointcloud(object_pc)
+
