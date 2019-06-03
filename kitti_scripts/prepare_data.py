@@ -104,13 +104,23 @@ if __name__ == '__main__':
             indices = in_hull(projected_pointcloud, obj.bb2d.get_hull())
             print('%d points' % projected_pointcloud[indices].shape[0])
             object_pc = np.hstack((projected_pointcloud[indices], pc[indices, 0:1]))
+            if args.show_image:
+                img = image
+                for pt in object_pc:
+                    cv2.circle(img, (int(pt[0]), int(pt[1])), 1, (0, 0, 255), -1)
+                window_name = 'test'
+                cv2.namedWindow(window_name)
+                cv2.imshow(window_name, image)
+                cv2.waitKey(0)
+                cv2.destroyWindow(window_name)
             object_pc = c.translate_p2_image_to_p0_camera(object_pc)
             # delete z < 0 (behind camera)
             object_pc = np.delete(object_pc, np.where(object_pc[:, 2] < 0), axis=0)
-            print(object_pc)
+            #print(object_pc)
             print('%d points' % object_pc.shape[0])
             #object_pc = c.translate_p2_image_to_velodyne(object_pc)
             #object_pc = np.delete(object_pc, np.where(object_pc[:, 0] < 0), axis=0)
             if args.show_pointcloud:
                 plot_pointcloud(object_pc)
+
 
