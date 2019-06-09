@@ -21,6 +21,7 @@ import loader
 
 # add project root dir to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from utils.height_map import HeightMap
 
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(FILE_PATH)
@@ -97,6 +98,11 @@ if __name__ == '__main__':
     print(p)
 
     pc = pc[:, 0:3]
+    print(pc.shape)
+    hm = HeightMap(pc)
+    pc = hm.get_obstacle_cloud()
+    print(pc.shape)
+    print(hm.get_ground_cloud().shape)
     projected_pointcloud = c.translate_velodyne_to_p2_image(pc)
     for obj in objects:
         if obj.type =='Pedestrian':
