@@ -22,6 +22,7 @@ import loader
 # add project root dir to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utils.height_map import HeightMap
+from utils.euclidean_clustering import EuclideanClustering
 
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(FILE_PATH)
@@ -109,30 +110,42 @@ if __name__ == '__main__':
     #print(hm.get_ground_cloud().shape)
     if args.show_pointcloud:
         plot_pointcloud(pc, args.use_mayavi)
-    pc = pc[:, 0:3]
-    projected_pointcloud = c.translate_velodyne_to_p2_image(pc)
+    pc_without_intensity = pc[:, 0:3]
+    projected_pointcloud = c.translate_velodyne_to_p2_image(pc_without_intensity)
     for obj in objects:
-        if obj.type =='Pedestrian':
+        if obj.type == 'Pedestrian' or obj.type == 'Car':
             obj.print_data()
             indices = in_hull(projected_pointcloud, obj.bb2d.get_hull())
             print('points in frustum')
             print('%d points' % projected_pointcloud[indices].shape[0])
             object_pc = np.hstack((projected_pointcloud[indices], pc[indices, 0:1]))
-            if args.show_image:
-                img = image
-                for pt in object_pc:
-                    cv2.circle(img, (int(pt[0]), int(pt[1])), 1, (0, 0, 255), -1)
-                window_name = 'test'
-                cv2.namedWindow(window_name)
-                cv2.imshow(window_name, image)
-                cv2.waitKey(0)
-                cv2.destroyWindow(window_name)
             object_pc = c.translate_p2_image_to_p0_camera(object_pc)
+            # restore intensity
+            object_pc = np.hstack((object_pc, pc[indices, 2:3]))
             # delete z < 0 (behind camera)
             object_pc = np.delete(object_pc, np.where(object_pc[:, 2] < 0), axis=0)
             print('delete behind camera')
             print('%d points' % object_pc.shape[0])
             if args.show_pointcloud:
                 plot_pointcloud(object_pc, args.use_mayavi)
-
-
+            ec = EuclideanClustering()
+            cluster_indices = ec.calculate(object_pc)
+            if len(cluster_indices) == 0:
+                print('no cluster!')
+                continue
+            object_pc = object_pc[cluster_indices[0]]
+            print('cluster num: %d' % len(cluster_indices))
+            print('final cluster')
+            print('%d points' % object_pc.shape[0])
+            if args.show_pointcloud:
+                plot_pointcloud(object_pc, args.use_mayavi)
+            object_pc_on_image = c.translate_p0_camera_to_p2_image(object_pc[:, 0:3])
+            if args.show_image:
+                img = image
+                for pt in object_pc_on_image:
+                    cv2.circle(img, (int(pt[0]), int(pt[1])), 1, (0, 0, 255), -1)
+                window_name = 'test'
+                cv2.namedWindow(window_name)
+                cv2.imshow(window_name, image)
+                cv2.waitKey(0)
+                cv2.destroyWindow(window_name)

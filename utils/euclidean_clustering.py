@@ -12,9 +12,9 @@ from pprint import pprint
 
 class EuclideanClustering:
     def __init__(self):
-        pass
+        self.set_params()
 
-    def set_params(self, tolerance, min_cluster_size, max_cluster_size, leaf_size):
+    def set_params(self, tolerance=0.5, min_cluster_size=5, max_cluster_size=1000, leaf_size=10):
         self.tolerance = tolerance
         self.min_cluster_size = min_cluster_size
         self.max_cluster_size = max_cluster_size
