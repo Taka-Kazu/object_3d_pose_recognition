@@ -29,17 +29,27 @@ KITTI_PATH = ROOT_DIR + '/dataset/kitti'
 KITTI_TRAIN_PATH = KITTI_PATH + '/training'
 KITTI_TEST_PATH = KITTI_PATH + '/test'
 
-def plot_pointcloud(cloud):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    cloud = cloud.transpose()
-    ax.scatter3D(cloud[0], cloud[1], cloud[2], s=0.05)
-    ax.axis('equal')
-    ax.set_title('pointcloud in ' + test_index)
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('z')
-    plt.show()
+def plot_pointcloud(cloud, use_mayavi_flag=False):
+    if not use_mayavi_flag:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        cloud = cloud.transpose()
+        ax.scatter3D(cloud[0], cloud[1], cloud[2], s=0.05)
+        ax.axis('equal')
+        ax.set_title('pointcloud in ' + test_index)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+        plt.show()
+    else:
+        import mayavi.mlab as mlab
+        mlab.clf()
+        if cloud.shape[1] == 4:
+            mlab.points3d(cloud[:,0], cloud[:,1], cloud[:,2], cloud[:,3], scale_factor=0.05)
+        else:
+            mlab.points3d(cloud[:,0], cloud[:,1], cloud[:,2], scale_factor=0.05)
+        mlab.show()
+        raw_input()
 
 def in_hull(p, hull):
     from scipy.spatial import Delaunay
@@ -70,13 +80,7 @@ if __name__ == '__main__':
     pc = loader.load_pointcloud(KITTI_TRAIN_PATH + '/velodyne/' + test_index + '.bin')
     print(pc.shape)
     if args.show_pointcloud:
-        if not args.use_mayavi:
-            plot_pointcloud(pc)
-        else:
-            import mayavi.mlab as mlab
-            mlab.clf()
-            mlab.points3d(pc[:,0], pc[:,1], pc[:,2], pc[:,3])
-            raw_input()
+        plot_pointcloud(pc, args.use_mayavi)
 
     objects = loader.load_label(KITTI_TRAIN_PATH + '/label_2/' + test_index + '.txt')
     for obj in objects:
@@ -127,6 +131,6 @@ if __name__ == '__main__':
             #object_pc = c.translate_p2_image_to_velodyne(object_pc)
             #object_pc = np.delete(object_pc, np.where(object_pc[:, 0] < 0), axis=0)
             if args.show_pointcloud:
-                plot_pointcloud(object_pc)
+                plot_pointcloud(object_pc, args.use_mayavi)
 
 
