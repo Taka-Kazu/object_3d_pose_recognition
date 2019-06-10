@@ -101,17 +101,21 @@ if __name__ == '__main__':
     p=c.translate_velodyne_to_p2_image(p)
     print(p)
 
-    pc = pc[:, 0:3]
     print(pc.shape)
     hm = HeightMap(pc)
     pc = hm.get_obstacle_cloud()
-    print(pc.shape)
-    print(hm.get_ground_cloud().shape)
+    print('heightmap')
+    print('%d points' % pc.shape[0])
+    #print(hm.get_ground_cloud().shape)
+    if args.show_pointcloud:
+        plot_pointcloud(pc, args.use_mayavi)
+    pc = pc[:, 0:3]
     projected_pointcloud = c.translate_velodyne_to_p2_image(pc)
     for obj in objects:
         if obj.type =='Pedestrian':
             obj.print_data()
             indices = in_hull(projected_pointcloud, obj.bb2d.get_hull())
+            print('points in frustum')
             print('%d points' % projected_pointcloud[indices].shape[0])
             object_pc = np.hstack((projected_pointcloud[indices], pc[indices, 0:1]))
             if args.show_image:
@@ -126,10 +130,8 @@ if __name__ == '__main__':
             object_pc = c.translate_p2_image_to_p0_camera(object_pc)
             # delete z < 0 (behind camera)
             object_pc = np.delete(object_pc, np.where(object_pc[:, 2] < 0), axis=0)
-            #print(object_pc)
+            print('delete behind camera')
             print('%d points' % object_pc.shape[0])
-            #object_pc = c.translate_p2_image_to_velodyne(object_pc)
-            #object_pc = np.delete(object_pc, np.where(object_pc[:, 0] < 0), axis=0)
             if args.show_pointcloud:
                 plot_pointcloud(object_pc, args.use_mayavi)
 

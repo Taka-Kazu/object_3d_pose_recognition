@@ -23,26 +23,36 @@ class HeightMap:
         self.obstacle_cloud = []
         self.ground_cloud = []
 
-        min_ = [[0] * cell_num] * cell_num
-        max_ = [[0] * cell_num] * cell_num
-        init_ = [[False] * cell_num] * cell_num
+        X_INDEX = 0
+        Y_INDEX = 1
+        Z_INDEX = 2
+
+        min_ = [[0 for i in range(cell_num)] for j in range(cell_num)]
+        max_ = [[0 for i in range(cell_num)] for j in range(cell_num)]
+        count_ = [[0 for i in range(cell_num)] for j in range(cell_num)]
+        init_ = [[False for i in range(cell_num)] for j in range(cell_num)]
 
         for pt in cloud:
-            x = int((cell_num / 2) + pt[0] / cell_size)
-            y = int((cell_num / 2) + pt[1] / cell_size)
+            x = int((cell_num / 2) + pt[X_INDEX] / cell_size)
+            y = int((cell_num / 2) + pt[Y_INDEX] / cell_size)
             if x >= 0 and x < cell_num and y >= 0 and y < cell_num:
-                if init_[x][y] == False:
-                    min_[x][y] = pt[2]
-                    max_[x][y] = pt[2]
+                if init_[x][y] is False:
+                    # first
+                    min_[x][y] = pt[Z_INDEX]
+                    max_[x][y] = pt[Z_INDEX]
                     init_[x][y] = True
                 else:
-                    min_[x][y] = min(min_[x][y], pt[2])
-                    max_[x][y] = max(max_[x][y], pt[2])
+                    min_[x][y] = min(min_[x][y], pt[Z_INDEX])
+                    max_[x][y] = max(max_[x][y], pt[Z_INDEX])
+                count_[x][y] += 1
 
+        #print(np.max(np.array(cloud)[:, Z_INDEX]))
+        #print(np.min(np.array(cloud)[:, Z_INDEX]))
         for pt in cloud:
-            x = int((cell_num / 2) + pt[0] / cell_size)
-            y = int((cell_num / 2) + pt[1] / cell_size)
+            x = int((cell_num / 2) + pt[X_INDEX] / cell_size)
+            y = int((cell_num / 2) + pt[Y_INDEX] / cell_size)
             if x >= 0 and x < cell_num and y >= 0 and y < cell_num and init_[x][y]:
+                #print((max_[x][y], min_[x][y]))
                 if (max_[x][y] - min_[x][y]) > height_threshold:
                     self.obstacle_cloud.append(pt)
                 else:
