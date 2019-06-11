@@ -65,6 +65,8 @@ if __name__ == '__main__':
     parser.add_argument('--show_image', action='store_true')
     parser.add_argument('--show_pointcloud', action='store_true')
     parser.add_argument('--use_mayavi', action='store_true')
+    parser.add_argument('--max_distance_limit', help='default: 25.0[m]', default=25.0)
+    parser.add_argument('--min_distance_limit', help='default: 1.0[m]', default=1.0)
     args = parser.parse_args()
 
     test_index = args.test_file_index
@@ -114,8 +116,9 @@ if __name__ == '__main__':
     projected_pointcloud = c.translate_velodyne_to_p2_image(pc_without_intensity)
     for obj in objects:
         if obj.type == 'Pedestrian' or obj.type == 'Car':
-            if obj.bb3d.position[2] < 1.0:
-                # z < 1.0[m]
+            if obj.bb3d.position[2] < args.min_distance_limit:
+                continue
+            if obj.bb3d.position[2] > args.max_distance_limit:
                 continue
             obj.print_data()
             indices = in_hull(projected_pointcloud, obj.bb2d.get_hull())
