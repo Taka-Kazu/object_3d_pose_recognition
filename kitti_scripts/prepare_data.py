@@ -67,9 +67,12 @@ if __name__ == '__main__':
     parser.add_argument('--use_mayavi', action='store_true')
     parser.add_argument('--max_distance_limit', help='default: 25.0[m]', default=25.0)
     parser.add_argument('--min_distance_limit', help='default: 1.0[m]', default=1.0)
+    parser.add_argument('--occlusion_list', help='default: 0,1,2', default='0,1,2')
     args = parser.parse_args()
 
     test_index = args.test_file_index
+    occlusion_list = [int(x) for x in args.occlusion_list.split(',')]
+    print(occlusion_list)
 
     image = loader.load_image(KITTI_TRAIN_PATH + '/image_2/' + test_index + '.png')
     print(image.shape)
@@ -119,6 +122,8 @@ if __name__ == '__main__':
             if obj.bb3d.position[2] < args.min_distance_limit:
                 continue
             if obj.bb3d.position[2] > args.max_distance_limit:
+                continue
+            if not (obj.visibility in occlusion_list):
                 continue
             obj.print_data()
             indices = in_hull(projected_pointcloud, obj.bb2d.get_hull())
