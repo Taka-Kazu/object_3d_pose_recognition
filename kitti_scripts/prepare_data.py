@@ -114,6 +114,9 @@ if __name__ == '__main__':
     projected_pointcloud = c.translate_velodyne_to_p2_image(pc_without_intensity)
     for obj in objects:
         if obj.type == 'Pedestrian' or obj.type == 'Car':
+            if obj.bb3d.position[2] < 1.0:
+                # z < 1.0[m]
+                continue
             obj.print_data()
             indices = in_hull(projected_pointcloud, obj.bb2d.get_hull())
             print('points in frustum')
