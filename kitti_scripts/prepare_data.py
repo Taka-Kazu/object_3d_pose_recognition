@@ -23,6 +23,7 @@ import loader
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utils.height_map import HeightMap
 from utils.euclidean_clustering import EuclideanClustering
+from utils.pca import PCA
 
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(FILE_PATH)
@@ -150,6 +151,9 @@ if __name__ == '__main__':
             print('%d points' % object_pc.shape[0])
             if args.show_pointcloud:
                 plot_pointcloud(object_pc, args.use_mayavi)
+            pca = PCA(object_pc)
+            print(pca.get_eigen_value())
+            print(pca.get_eigen_vector())
             object_pc_on_image = c.translate_p0_camera_to_p2_image(object_pc[:, 0:3])
             if args.show_image:
                 img = image.copy()

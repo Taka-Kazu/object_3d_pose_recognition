@@ -11,16 +11,15 @@ import numpy as np
 class PCA:
     def __init__(self, data):
         '''
-        data: ndarray, n * 3
+        data: ndarray, n * 4
         '''
+        data = data[:, 0:3]
         n = data.shape[0]
         m = data.shape[1]
         mean = np.mean(data, axis=0)
         covariance = np.cov(data.transpose())
-        print(covariance)
         eigen_value, eigen_vector = np.linalg.eig(covariance)
         eigen_vector = eigen_vector.transpose()
-        print(eigen_vector)
         # sort
         contribution_rate = eigen_value / eigen_value.sum()
         descending_order_indices = np.argsort(eigen_value)[::-1]
