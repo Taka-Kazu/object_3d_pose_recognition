@@ -141,11 +141,12 @@ if __name__ == '__main__':
                 plot_pointcloud(object_pc, args.use_mayavi)
             object_pc_on_image = c.translate_p0_camera_to_p2_image(object_pc[:, 0:3])
             if args.show_image:
-                img = image
+                img = image.copy()
                 for pt in object_pc_on_image:
                     cv2.circle(img, (int(pt[0]), int(pt[1])), 1, (0, 0, 255), -1)
+                cv2.rectangle(img, (obj.bb2d.xmin, obj.bb2d.ymin), (obj.bb2d.xmax, obj.bb2d.ymax), (255, 0, 0), 2)
                 window_name = 'test'
                 cv2.namedWindow(window_name)
-                cv2.imshow(window_name, image)
+                cv2.imshow(window_name, img)
                 cv2.waitKey(0)
                 cv2.destroyWindow(window_name)
