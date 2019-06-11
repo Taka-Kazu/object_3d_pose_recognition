@@ -28,15 +28,16 @@ class EuclideanClustering:
 
     def calculate(self, data):
         '''
-        data: ndarray, n * 3
+        data: ndarray, n * 4
         '''
-        self.n = data.shape[0]
-        self.m = data.shape[1]
+        data = data.tolist()
+        self.n = len(data)
+        self.m = len(data[0])
         self.data = data
         self.tree = ss.KDTree(self.data, leafsize=self.leaf_size)
         queue = []
         cluster_indices_list = []
-        for i in range(self.data.shape[0]):
+        for i in range(self.n):
             computed_flag = self.is_computed_index(i, cluster_indices_list)
             if not computed_flag:
                 queue.append(i)
