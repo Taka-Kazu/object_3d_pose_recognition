@@ -14,6 +14,7 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import argparse
+import cPickle as pickle
 
 from kitti_object import Object
 from calibration import Calibration
@@ -152,8 +153,27 @@ if __name__ == '__main__':
             if args.show_pointcloud:
                 plot_pointcloud(object_pc, args.use_mayavi)
             pca = PCA(object_pc)
-            print(pca.get_eigen_value())
-            print(pca.get_eigen_vector())
+            eigen_value = pca.get_eigen_value()
+            print(eigen_value)
+            eigen_vector = pca.get_eigen_vector()
+            print(eigen_vector)
+            min_distance = min(object_pc[:, 2])
+            print('min_distance=%f[m]' % min_distance)
+            bb_points = obj.bb2d.get_hull()
+            d_list = np.full((bb_points.shape[0], 1), min_distance)
+            bb_points = np.hstack((bb_points, d_list))
+            bb_points = c.translate_p2_image_to_p0_camera(bb_points)
+            #print(bb_points)
+            w = bb_points[2, 0] - bb_points[0, 0]
+            h = bb_points[1, 1] - bb_points[0, 1]
+            print((w, h))
+            data_ = np.hstack((eigen_vector, eigen_value.reshape(-1, 1))).reshape(-1)
+            data_ = np.hstack((data_, w, h))
+            print(data_)
+            with open(test_index + '.pickle', 'wb') as fp:
+                pickle.dump(data_, fp)
+            with open(test_index + '.pickle', 'rb') as fp:
+                pass
             object_pc_on_image = c.translate_p0_camera_to_p2_image(object_pc[:, 0:3])
             if args.show_image:
                 img = image.copy()
