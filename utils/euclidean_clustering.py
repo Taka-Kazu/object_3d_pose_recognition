@@ -14,7 +14,7 @@ class EuclideanClustering:
     def __init__(self):
         self.set_params()
 
-    def set_params(self, tolerance=0.5, min_cluster_size=5, max_cluster_size=1000, leaf_size=100):
+    def set_params(self, tolerance=0.5, min_cluster_size=5, max_cluster_size=2000, leaf_size=100):
         self.tolerance = tolerance
         self.min_cluster_size = min_cluster_size
         self.max_cluster_size = max_cluster_size
