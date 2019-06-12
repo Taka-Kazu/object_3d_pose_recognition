@@ -30,10 +30,9 @@ class EuclideanClustering:
         '''
         data: ndarray, n * 4
         '''
-        data = data.tolist()
-        self.n = len(data)
-        self.m = len(data[0])
-        self.data = data
+        self.data = data[:, 0:3].tolist()
+        self.n = len(self.data)
+        self.m = len(self.data[0])
         self.tree = ss.KDTree(self.data, leafsize=self.leaf_size)
         queue = []
         cluster_indices_list = []
