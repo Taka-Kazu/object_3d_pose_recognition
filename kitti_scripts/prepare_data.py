@@ -60,6 +60,16 @@ def in_hull(p, hull):
         hull = Delaunay(hull)
     return hull.find_simplex(p) >= 0
 
+def get_closest_point(cloud):
+    closest_point = cloud[0]
+    closest_distance = np.linalg.norm(closest_point)
+    for pt in cloud:
+        pt_distance = np.linalg.norm(pt)
+        if pt_distance < closest_distance:
+            closest_point = pt
+            closest_distance = pt_distance
+    return closest_point
+
 # for test
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -119,6 +129,8 @@ if __name__ == '__main__':
         plot_pointcloud(pc, args.use_mayavi)
     pc_without_intensity = pc[:, 0:3]
     projected_pointcloud = c.translate_velodyne_to_p2_image(pc_without_intensity)
+
+    data = None
     for obj in objects:
         if obj.type == 'Pedestrian' or obj.type == 'Car':
             if obj.bb3d.position[2] < args.min_distance_limit:
@@ -157,23 +169,25 @@ if __name__ == '__main__':
             print(eigen_value)
             eigen_vector = pca.get_eigen_vector()
             print(eigen_vector)
-            min_distance = min(object_pc[:, 2])
-            print('min_distance=%f[m]' % min_distance)
+            closest_point = get_closest_point(object_pc[:, 0:3])
+            print('closest point: ', closest_point)
             bb_points = obj.bb2d.get_hull()
-            d_list = np.full((bb_points.shape[0], 1), min_distance)
+            d_list = np.full((bb_points.shape[0], 1), closest_point[2])
+            # add depth
             bb_points = np.hstack((bb_points, d_list))
             bb_points = c.translate_p2_image_to_p0_camera(bb_points)
             #print(bb_points)
             w = bb_points[2, 0] - bb_points[0, 0]
             h = bb_points[1, 1] - bb_points[0, 1]
             print((w, h))
+            # make data
+            ## input data
             data_ = np.hstack((eigen_vector, eigen_value.reshape(-1, 1))).reshape(-1)
             data_ = np.hstack((data_, w, h))
-            print(data_)
-            with open(test_index + '.pickle', 'wb') as fp:
-                pickle.dump(data_, fp)
-            with open(test_index + '.pickle', 'rb') as fp:
-                pass
+            data_ = np.hstack((data_, closest_point))
+            data_ = np.hstack((data_, obj.type))
+            ## label
+            data_ = np.hstack((data_, test_index))
             object_pc_on_image = c.translate_p0_camera_to_p2_image(object_pc[:, 0:3])
             if args.show_image:
                 img = image.copy()
@@ -185,3 +199,15 @@ if __name__ == '__main__':
                 cv2.imshow(window_name, img)
                 cv2.waitKey(0)
                 cv2.destroyWindow(window_name)
+            if data is not None:
+                data = np.vstack((data, data_))
+            else:
+                data = data_
+    print(data)
+    with open(test_index + '.pickle', 'wb') as fp:
+        pickle.dump(data, fp)
+    print('saved as ' + test_index + '.pickle')
+    with open(test_index + '.pickle', 'rb') as fp:
+        print('load ' + test_index + '.pickle')
+        data = pickle.load(fp)
+        print(data)
