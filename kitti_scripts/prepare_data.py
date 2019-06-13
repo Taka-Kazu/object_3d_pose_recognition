@@ -188,6 +188,9 @@ if __name__ == '__main__':
             data_ = np.hstack((data_, obj.type))
             ## label
             data_ = np.hstack((data_, test_index))
+            data_ = np.hstack((data_, obj.bb3d.position))
+            data_ = np.hstack((data_, obj.bb3d.yaw))
+            data_ = np.hstack((data_, obj.bb3d.size))
             object_pc_on_image = c.translate_p0_camera_to_p2_image(object_pc[:, 0:3])
             if args.show_image:
                 img = image.copy()

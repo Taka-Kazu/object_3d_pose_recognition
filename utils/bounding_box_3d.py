@@ -15,6 +15,7 @@ class BoundingBox3d:
         self.w = data_size[1]
         self.l = data_size[2]
         self.position = np.array(data_xyz)
+        self.size = np.array([self.h, self.w, self.l])
         self.yaw = yaw
         '''
            1-------3
