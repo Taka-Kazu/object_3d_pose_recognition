@@ -17,7 +17,7 @@ class BoundingBox3d:
         self.position = np.array(data_xyz)
         self.yaw = yaw
         '''
-           4-------6
+           1-------3
           /|      /|
          / |     / |
         0-------2  |
@@ -25,33 +25,35 @@ class BoundingBox3d:
         |  5----|--7
         | /     | /
         |/      |/
-        1-------3
+        4-------6
 
              /z
-            +--y
-           x|
+            +--x
+           y|
 
-          x: length
-          y: width
-          z: height
+          x: width
+          y: height
+          z: length
 
           position is centroid of vertices
+          yaw is angle from x-axis around y-axis of camera
         '''
     def calculate_vertices(self):
         vertices = []
         for h in range(2):
-            z = (h - 0.5) * self.h
+            y = (h - 0.5) * self.h
             for w in range(2):
-                y = (w - 0.5) * self.w
+                x = (w - 0.5) * self.w
                 for l in range(2):
-                    x = (l - 0.5) * self.l
+                    z = (l - 0.5) * self.l
                     vertices.append([x, y, z])
         vertices = np.array(vertices)
-        transform = np.array([[np.cos(self.yaw), -np.sin(self.yaw), 0, self.position[0]],
-                              [np.sin(self.yaw),  np.cos(self.yaw), 0, self.position[1]],
-                              [               0,                 0, 1, self.position[2]],
-                              [               0,                 0, 0,                1]])
+        transform = np.array([[np.cos(self.yaw), 0, -np.sin(self.yaw), self.position[0]],
+                              [               0, 1,                 0, self.position[1]],
+                              [np.sin(self.yaw), 0,  np.cos(self.yaw), self.position[2]],
+                              [               0, 0,                 0,                1]])
         vertices = np.hstack((vertices, np.ones((vertices.shape[0], 1))))
+        pprint(vertices)
         vertices = transform.dot(vertices.transpose())
         return vertices[0:3, :].transpose()
 
