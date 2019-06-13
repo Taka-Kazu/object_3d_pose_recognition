@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import argparse
 import cPickle as pickle
+from tqdm import tqdm
 
 from kitti_object import Object
 from calibration import Calibration
@@ -31,6 +32,7 @@ ROOT_DIR = os.path.dirname(FILE_PATH)
 KITTI_PATH = ROOT_DIR + '/dataset/kitti'
 KITTI_TRAIN_PATH = KITTI_PATH + '/training'
 KITTI_TEST_PATH = KITTI_PATH + '/test'
+DATASET_DIR = ROOT_DIR + '/kitti'
 
 def plot_pointcloud(cloud, use_mayavi_flag=False):
     if not use_mayavi_flag:
@@ -39,7 +41,7 @@ def plot_pointcloud(cloud, use_mayavi_flag=False):
         cloud = cloud.transpose()
         ax.scatter3D(cloud[0], cloud[1], cloud[2], s=0.05)
         ax.axis('equal')
-        ax.set_title('pointcloud in ' + test_index)
+        ax.set_title('pointcloud')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')
@@ -70,23 +72,11 @@ def get_closest_point(cloud):
             closest_distance = pt_distance
     return closest_point
 
-# for test
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--test_file_index', help='default: 000000', default='000000')
-    parser.add_argument('--show_image', action='store_true')
-    parser.add_argument('--show_pointcloud', action='store_true')
-    parser.add_argument('--use_mayavi', action='store_true')
-    parser.add_argument('--max_distance_limit', help='default: 25.0[m]', default=25.0)
-    parser.add_argument('--min_distance_limit', help='default: 1.0[m]', default=1.0)
-    parser.add_argument('--occlusion_list', help='default: 0,1,2', default='0,1,2')
-    args = parser.parse_args()
-
-    test_index = args.test_file_index
-    occlusion_list = [int(x) for x in args.occlusion_list.split(',')]
-    print(occlusion_list)
-
-    image = loader.load_image(KITTI_TRAIN_PATH + '/image_2/' + test_index + '.png')
+def get_data_from_file_and_prepare(file_index, occlusion_list):
+    '''
+        file_index: string, like '000000'
+    '''
+    image = loader.load_image(KITTI_TRAIN_PATH + '/image_2/' + file_index + '.png')
     print(image.shape)
     if args.show_image:
         window_name = 'test'
@@ -95,17 +85,20 @@ if __name__ == '__main__':
         cv2.waitKey(0)
         cv2.destroyWindow(window_name)
 
-    pc = loader.load_pointcloud(KITTI_TRAIN_PATH + '/velodyne/' + test_index + '.bin')
+    pc = loader.load_pointcloud(KITTI_TRAIN_PATH + '/velodyne/' + file_index + '.bin')
     print(pc.shape)
     if args.show_pointcloud:
         plot_pointcloud(pc, args.use_mayavi)
 
-    objects = loader.load_label(KITTI_TRAIN_PATH + '/label_2/' + test_index + '.txt')
+    objects = loader.load_label(KITTI_TRAIN_PATH + '/label_2/' + file_index + '.txt')
+    '''
     for obj in objects:
         obj.print_data()
+    '''
 
-    calib = loader.load_camera_calibration(KITTI_TRAIN_PATH + '/calib/' + test_index + '.txt')
+    calib = loader.load_camera_calibration(KITTI_TRAIN_PATH + '/calib/' + file_index + '.txt')
     c = Calibration(calib)
+    '''
     p = objects[0].bb3d.position.reshape(-1, 3)
     print(p)
     p=c.project_3d_to_2d(p)
@@ -118,6 +111,7 @@ if __name__ == '__main__':
     print(p)
     p=c.translate_velodyne_to_p2_image(p)
     print(p)
+    '''
 
     print(pc.shape)
     hm = HeightMap(pc)
@@ -187,7 +181,7 @@ if __name__ == '__main__':
             data_ = np.hstack((data_, closest_point))
             data_ = np.hstack((data_, obj.type))
             ## label
-            data_ = np.hstack((data_, test_index))
+            data_ = np.hstack((data_, file_index))
             data_ = np.hstack((data_, obj.bb3d.position))
             data_ = np.hstack((data_, obj.bb3d.yaw))
             data_ = np.hstack((data_, obj.bb3d.size))
@@ -206,11 +200,63 @@ if __name__ == '__main__':
                 data = np.vstack((data, data_))
             else:
                 data = data_
-    print(data)
-    with open(test_index + '.pickle', 'wb') as fp:
-        pickle.dump(data, fp)
-    print('saved as ' + test_index + '.pickle')
-    with open(test_index + '.pickle', 'rb') as fp:
-        print('load ' + test_index + '.pickle')
-        data = pickle.load(fp)
+    return data
+
+# for test
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--test_file_index', help='default: 000000', default='000000')
+    parser.add_argument('--show_image', action='store_true')
+    parser.add_argument('--show_pointcloud', action='store_true')
+    parser.add_argument('--use_mayavi', action='store_true')
+    parser.add_argument('--max_distance_limit', help='default: 25.0[m]', default=25.0)
+    parser.add_argument('--min_distance_limit', help='default: 1.0[m]', default=1.0)
+    parser.add_argument('--occlusion_list', help='default: 0,1,2', default='0,1,2')
+    parser.add_argument('--demo', action='store_true')
+    parser.add_argument('--train', action='store_true', help='make train data')
+    parser.add_argument('--test', action='store_true', help='make test data')
+    args = parser.parse_args()
+
+    if args.demo:
+        test_index = args.test_file_index
+        occlusion_list = [int(x) for x in args.occlusion_list.split(',')]
+        print(occlusion_list)
+
+        data = get_data_from_file_and_prepare(test_index, occlusion_list)
+
         print(data)
+        output_file_name = DATASET_DIR + '/' + test_index + '.pickle'
+        with open(output_file_name, 'wb') as fp:
+            pickle.dump(data, fp)
+        print('saved as ' + output_file_name)
+        with open(output_file_name, 'rb') as fp:
+            print('load ' + output_file_name)
+            data = pickle.load(fp)
+            print(data)
+    else:
+        occlusion_list = [int(x) for x in args.occlusion_list.split(',')]
+        print('occlusion: ', occlusion_list)
+        if args.train:
+            print('=== generate train data ===')
+            index_file_name = os.path.join(DATASET_DIR, 'dataset_index', 'train.txt')
+            data_index_list = ['%06d'%(int(line.rstrip())) for line in open(index_file_name)]
+            data = None
+            for index in tqdm(data_index_list):
+                print('data: ', index)
+                data = get_data_from_file_and_prepare(index, occlusion_list)
+            output_file_name = os.path.join(DATASET_DIR, 'train.pickle')
+            with open(output_file_name, 'wb') as fp:
+                pickle.dump(data, fp)
+            print('saved as ' + output_file_name)
+        if args.test:
+            print('=== generate test data ===')
+            index_file_name = os.path.join(DATASET_DIR, 'dataset_index', 'test.txt')
+            data_index_list = ['%06d'%(int(line.rstrip())) for line in open(index_file_name)]
+            data = None
+            for index in tqdm(data_index_list):
+                print('data: ', index)
+                data = get_data_from_file_and_prepare(index, occlusion_list)
+            output_file_name = os.path.join(DATASET_DIR, 'test.pickle')
+            with open(output_file_name, 'wb') as fp:
+                pickle.dump(data, fp)
+            print('saved as ' + output_file_name)
