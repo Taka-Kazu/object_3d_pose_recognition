@@ -9,6 +9,7 @@ from __future__ import absolute_import
 import numpy as np
 import scipy.spatial as ss
 from pprint import pprint
+import time
 
 class EuclideanClustering:
     def __init__(self):
@@ -35,11 +36,12 @@ class EuclideanClustering:
         self.m = len(self.data[0])
         self.tree = ss.cKDTree(self.data, leafsize=self.leaf_size)
         queue = []
+        queue_append = queue.append
         cluster_indices_list = []
         for i in range(self.n):
             computed_flag = self.is_computed_index(i, cluster_indices_list)
             if not computed_flag:
-                queue.append(i)
+                queue_append(i)
                 max_flag = False
                 for j in queue:
                     p = self.data[j]
@@ -47,7 +49,7 @@ class EuclideanClustering:
                     for index in indices:
                         if not (index in queue) and not self.is_computed_index(index, cluster_indices_list):
                             #print('index was added to queue')
-                            queue.append(index)
+                            queue_append(index)
                             if len(queue) == self.max_cluster_size:
                                 max_flag = True
                                 break
@@ -56,8 +58,8 @@ class EuclideanClustering:
                             pass
                     if max_flag:
                         break
-                cluster_indices_list.append(queue)
-                queue = []
+                cluster_indices_list.append(queue[:])
+                del queue[:]
         # sort
         cluster_num = len(cluster_indices_list)
         while True:
@@ -80,7 +82,9 @@ if __name__=='__main__':
     pc = 3 * (np.random.rand(2000, 3) - 0.5)
 
     ec.set_params(1, 3, 6, 10)
+    start = time.time()
     clusters = ec.calculate(pc)
-    pprint(clusters)
+    print(time.time() - start)
+    #pprint(clusters)
     largest_cluster = pc[clusters[0]]
-    pprint(largest_cluster)
+    #pprint(largest_cluster)
