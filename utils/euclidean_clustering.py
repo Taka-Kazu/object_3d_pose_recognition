@@ -33,7 +33,7 @@ class EuclideanClustering:
         self.data = data[:, 0:3].tolist()
         self.n = len(self.data)
         self.m = len(self.data[0])
-        self.tree = ss.KDTree(self.data, leafsize=self.leaf_size)
+        self.tree = ss.cKDTree(self.data, leafsize=self.leaf_size)
         queue = []
         cluster_indices_list = []
         for i in range(self.n):
@@ -77,7 +77,7 @@ class EuclideanClustering:
 
 if __name__=='__main__':
     ec = EuclideanClustering()
-    pc = 3 * (np.random.rand(20, 3) - 0.5)
+    pc = 3 * (np.random.rand(2000, 3) - 0.5)
 
     ec.set_params(1, 3, 6, 10)
     clusters = ec.calculate(pc)
