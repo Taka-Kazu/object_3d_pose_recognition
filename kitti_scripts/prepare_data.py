@@ -137,6 +137,9 @@ def get_data_from_file_and_prepare(file_index, occlusion_list):
             indices = in_hull(projected_pointcloud, obj.bb2d.get_hull())
             print('points in frustum')
             print('%d points' % projected_pointcloud[indices].shape[0])
+            if projected_pointcloud[indices].shape[0] == 0:
+                print("no point in 2d bounding box")
+                continue
             object_pc = np.hstack((projected_pointcloud[indices], pc[indices, 0:1]))
             object_pc = c.translate_p2_image_to_p0_camera(object_pc)
             # restore intensity
@@ -200,7 +203,30 @@ def get_data_from_file_and_prepare(file_index, occlusion_list):
                 data = np.vstack((data, data_))
             else:
                 data = data_
+    if data is not None:
+        if len(data.shape) == 1:
+            data = data.reshape(1, -1)
     return data
+
+def generate_data(prefix):
+    index_file_name = os.path.join(DATASET_DIR, 'dataset_index', prefix + '.txt')
+    data_index_list = ['%06d'%(int(line.rstrip())) for line in open(index_file_name)]
+    data = None
+    for index in tqdm(data_index_list):
+        print('===========================')
+        print('data: ', index)
+        data_ = get_data_from_file_and_prepare(index, occlusion_list)
+        if data_ is None:
+            continue
+        if data is not None:
+            print(data.shape)
+            data = np.vstack((data, data_))
+        else:
+            data = data_
+    output_file_name = os.path.join(DATASET_DIR, 'prefix' + '.pickle')
+    with open(output_file_name, 'wb') as fp:
+        pickle.dump(data, fp)
+    print('saved as ' + output_file_name)
 
 # for test
 if __name__ == '__main__':
@@ -238,25 +264,7 @@ if __name__ == '__main__':
         print('occlusion: ', occlusion_list)
         if args.train:
             print('=== generate train data ===')
-            index_file_name = os.path.join(DATASET_DIR, 'dataset_index', 'train.txt')
-            data_index_list = ['%06d'%(int(line.rstrip())) for line in open(index_file_name)]
-            data = None
-            for index in tqdm(data_index_list):
-                print('data: ', index)
-                data = get_data_from_file_and_prepare(index, occlusion_list)
-            output_file_name = os.path.join(DATASET_DIR, 'train.pickle')
-            with open(output_file_name, 'wb') as fp:
-                pickle.dump(data, fp)
-            print('saved as ' + output_file_name)
+            generate_data('train')
         if args.test:
             print('=== generate test data ===')
-            index_file_name = os.path.join(DATASET_DIR, 'dataset_index', 'test.txt')
-            data_index_list = ['%06d'%(int(line.rstrip())) for line in open(index_file_name)]
-            data = None
-            for index in tqdm(data_index_list):
-                print('data: ', index)
-                data = get_data_from_file_and_prepare(index, occlusion_list)
-            output_file_name = os.path.join(DATASET_DIR, 'test.pickle')
-            with open(output_file_name, 'wb') as fp:
-                pickle.dump(data, fp)
-            print('saved as ' + output_file_name)
+            generate_data('test')
