@@ -49,14 +49,17 @@ class EuclideanClustering:
                 for j in queue:
                     p = self.data[j]
                     indices = self.tree.query_ball_point(p, self.tolerance)
+                    _indices = list(set(indices) & set(computed_indices_list))
+                    indices = list(set(indices) ^ set(_indices))
                     for index in indices:
-                        if not (index in queue) and not self.is_computed_index(index, computed_indices_list):
+                        if not (index in queue):
                             #print('index was added to queue')
                             queue.append(index)
                             if len(queue) == self.max_cluster_size:
                                 max_flag = True
                                 break
                         else:
+                            #majority
                             #print('queue already has this index')
                             pass
                     if max_flag:
@@ -89,6 +92,7 @@ if __name__=='__main__':
     start = time.time()
     clusters = ec.calculate(pc)
     print(time.time() - start)
+    pprint(("cluster num: ", len(clusters)))
     #pprint(clusters)
     largest_cluster = pc[clusters[0]]
     #pprint(largest_cluster)
