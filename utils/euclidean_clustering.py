@@ -22,10 +22,13 @@ class EuclideanClustering:
         self.leaf_size = leaf_size
 
     def is_computed_index(self, index, indices_list):
+        return index in indices_list
+        '''
         for indices in indices_list:
             if index in indices:
                 return True
         return False
+        '''
 
     def calculate(self, data):
         '''
@@ -36,20 +39,20 @@ class EuclideanClustering:
         self.m = len(self.data[0])
         self.tree = ss.cKDTree(self.data, leafsize=self.leaf_size)
         queue = []
-        queue_append = queue.append
         cluster_indices_list = []
+        computed_indices_list = []
         for i in range(self.n):
-            computed_flag = self.is_computed_index(i, cluster_indices_list)
+            computed_flag = self.is_computed_index(i, computed_indices_list)
             if not computed_flag:
-                queue_append(i)
+                queue.append(i)
                 max_flag = False
                 for j in queue:
                     p = self.data[j]
                     indices = self.tree.query_ball_point(p, self.tolerance)
                     for index in indices:
-                        if not (index in queue) and not self.is_computed_index(index, cluster_indices_list):
+                        if not (index in queue) and not self.is_computed_index(index, computed_indices_list):
                             #print('index was added to queue')
-                            queue_append(index)
+                            queue.append(index)
                             if len(queue) == self.max_cluster_size:
                                 max_flag = True
                                 break
@@ -59,6 +62,7 @@ class EuclideanClustering:
                     if max_flag:
                         break
                 cluster_indices_list.append(queue[:])
+                computed_indices_list.extend(queue[:])
                 del queue[:]
         # sort
         cluster_num = len(cluster_indices_list)
