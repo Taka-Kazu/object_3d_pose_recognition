@@ -3,11 +3,13 @@
 
 from __future__ import print_function
 
+import os
+import _pickle as pickle
 import torch
 import torch.utils.data
 
 class ObjectDataset(torch.utils.data.Dataset):
-    def __init__(self, prefix, transform=None):
+    def __init__(self, dir_name, prefix, transform=None):
         self.transform = transform
         self.data_num = 0
         self.data = []
@@ -15,7 +17,11 @@ class ObjectDataset(torch.utils.data.Dataset):
 
         # prepare data and label
         if prefix is 'train':
-            pass
+            file_name = dir_name + '/' + prefix + '.pickle'
+            with open(file_name, 'rb') as fp:
+                print('load ' + file_name)
+                data = pickle.load(fp)
+                print(data)
         elif prefix is 'test':
             pass
         else:
@@ -35,5 +41,5 @@ class ObjectDataset(torch.utils.data.Dataset):
         return output_data, output_label
 
 if __name__ == '__main__':
-    dataset = ObjectDataset('train', transform=None)
+    dataset = ObjectDataset(os.path.dirname(os.path.abspath(__file__)) + '/../kitti', 'train', transform=None)
     data_loader = torch.utils.data.DataLoader(dataset, batch_size=10, shuffle=False)

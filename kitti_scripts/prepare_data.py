@@ -14,7 +14,7 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import argparse
-import cPickle as pickle
+import _pickle as pickle
 from tqdm import tqdm
 
 from kitti_object import Object
