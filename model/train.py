@@ -10,6 +10,7 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 
 from network import Network
+from dataset import ObjectDataset
 
 class Net(nn.Module):
     def __init__(self):
