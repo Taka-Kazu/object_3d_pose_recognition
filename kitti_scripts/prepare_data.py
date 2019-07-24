@@ -223,7 +223,7 @@ def generate_data(prefix):
             data = np.vstack((data, data_))
         else:
             data = data_
-    output_file_name = os.path.join(DATASET_DIR, 'prefix' + '.pickle')
+    output_file_name = os.path.join(DATASET_DIR, prefix + '.pickle')
     with open(output_file_name, 'wb') as fp:
         pickle.dump(data, fp)
     print('saved as ' + output_file_name)
