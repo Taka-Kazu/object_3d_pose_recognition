@@ -3,7 +3,6 @@
 
 from __future__ import print_function
 
-import numpy as np
 import os
 import _pickle as pickle
 import torch
@@ -95,7 +94,7 @@ class ObjectDataset(torch.utils.data.Dataset):
 
 class ToTensor(object):
     def __call__(self, sample):
-        sample = torch.from_numpy(np.array(sample))
+        sample = torch.Tensor(sample)
         return sample
 
 if __name__ == '__main__':
