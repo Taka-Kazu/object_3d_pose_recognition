@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 
+import numpy as np
 import os
 import _pickle as pickle
 import torch
@@ -80,6 +81,7 @@ class ObjectDataset(torch.utils.data.Dataset):
 
         if self.transform:
             output_data = self.transform(output_data)
+            output_label = self.transform(output_label)
 
         return (output_data, output_label)
 
@@ -91,15 +93,28 @@ class ObjectDataset(torch.utils.data.Dataset):
         _data = [string.lower() for string in string_dataset]
         return _data
 
+class ToTensor(object):
+    def __call__(self, sample):
+        sample = torch.from_numpy(np.array(sample))
+        return sample
+
 if __name__ == '__main__':
-    dataset = ObjectDataset(os.path.dirname(os.path.abspath(__file__)) + '/../kitti', 'train', transform=None)
-    print(len(dataset))
-    data_loader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=False)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    from torchvision import transforms
+    # dataset = ObjectDataset(os.path.dirname(os.path.abspath(__file__)) + '/../kitti', 'train', transform=None)
+    # print(len(dataset))
+    data_loader = torch.utils.data.DataLoader(
+        ObjectDataset(os.path.dirname(os.path.abspath(__file__)) + '/../kitti', 'train', transform=transforms.Compose([
+            ToTensor()
+        ])),
+        batch_size=32, shuffle=False)
     print(len(data_loader))
     for batch_idx, (data, label) in enumerate(data_loader):
         print('=========== batch index ===========')
         print(batch_idx)
         print('=========== data ===========')
         print(data)
+        data.to(device)
         print('=========== label ===========')
         print(label)
+        label.to(device)

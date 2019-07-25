@@ -12,7 +12,7 @@ from torchvision import datasets, transforms
 class Network(nn.Module):
     def __init__(self, class_num):
         super(Network, self).__init__()
-        self.input_2d = nn.Linear(class_num, 16)
+        self.input_onehot = nn.Linear(class_num, 16)
         self.fc1 = nn.Linear(16, 1)
         self.input_3d = nn.Linear(14, 64)
         self.fc2 = nn.Linear(64, 63)
@@ -20,10 +20,10 @@ class Network(nn.Module):
         self.fc4 = nn.Linear(64, 64)
         self.output = nn.Linear(64, 7)
 
-    def forward(self, x_2d, x_3d):
+    def forward(self, onehot, x_3d):
         x_3d_vec = x_3d[0:14]
         x_3d_center = x_3d[14:17]
-        x = F.relu(self.input_2d(x_2d))
+        x = F.relu(self.input_onehot(onehot))
         x = F.relu(self.fc1(x))
         y = F.relu(self.input_3d(x_3d_vec))
         y = F.relu(self.fc2(y))
@@ -37,9 +37,9 @@ class Network(nn.Module):
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
-    model = Network(2).to(device)
+    model = Network(3).to(device)
     print(model)
-    a = torch.rand(2).to(device)
+    a = torch.rand(3).to(device)
     print(a)
     b = torch.rand(17).to(device)
     print(b)
