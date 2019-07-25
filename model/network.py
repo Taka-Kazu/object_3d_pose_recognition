@@ -20,16 +20,18 @@ class Network(nn.Module):
         self.fc4 = nn.Linear(64, 64)
         self.output = nn.Linear(64, 7)
 
-    def forward(self, x_2d, x_3d, center):
+    def forward(self, x_2d, x_3d):
+        x_3d_vec = x_3d[0:14]
+        x_3d_center = x_3d[14:17]
         x = F.relu(self.input_2d(x_2d))
         x = F.relu(self.fc1(x))
-        y = F.relu(self.input_3d(x_3d))
+        y = F.relu(self.input_3d(x_3d_vec))
         y = F.relu(self.fc2(y))
         z = torch.cat([x, y], dim=0)
         z = F.relu(self.fc3(z))
         z = F.relu(self.fc4(z))
         z = self.output(z)
-        z[0:len(center)] = z[0:len(center)] + center
+        z[0:3] = z[0:3] + x_3d_center
         return z
 
 if __name__ == '__main__':
@@ -39,8 +41,6 @@ if __name__ == '__main__':
     print(model)
     a = torch.rand(2).to(device)
     print(a)
-    b = torch.rand(14).to(device)
+    b = torch.rand(17).to(device)
     print(b)
-    c = torch.rand(3).to(device)
-    print(c)
-    print(model.forward(a, b, c))
+    print(model.forward(a, b))
