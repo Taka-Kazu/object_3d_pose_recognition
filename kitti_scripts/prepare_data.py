@@ -16,6 +16,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import argparse
 import _pickle as pickle
 from tqdm import tqdm
+from multiprocessing import Process, Manager
 
 from kitti_object import Object
 from calibration import Calibration
@@ -206,7 +207,9 @@ def get_data_from_file_and_prepare(data_path, file_index, occlusion_list):
     if data is not None:
         if len(data.shape) == 1:
             data = data.reshape(1, -1)
-    return data
+    else:
+        return []
+    return data.tolist()
 
 def generate_data(prefix):
     index_file_name = os.path.join(DATASET_DIR, 'dataset_index', prefix + '.txt')
@@ -225,8 +228,10 @@ def generate_data(prefix):
         if data_ is None:
             continue
         if data is not None:
-            print(data.shape)
-            data = np.vstack((data, data_))
+            # print(data.shape)
+            print(np.array(data).shape)
+            # data = np.vstack((data, data_))
+            data.append(data_)
         else:
             data = data_
 
