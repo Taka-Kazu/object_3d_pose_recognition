@@ -51,7 +51,7 @@ class ObjectDataset(torch.utils.data.Dataset):
         # print(self.classes)
 
         # prepare data and label
-        if prefix is not 'train' and prefix is not 'test':
+        if prefix is not 'train' and prefix is not 'test' and prefix is not 'val':
             print('invalid prefix')
             exit(0)
 

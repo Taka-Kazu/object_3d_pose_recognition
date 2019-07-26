@@ -72,7 +72,7 @@ def get_closest_point(cloud):
             closest_distance = pt_distance
     return closest_point
 
-def get_data_from_file_and_prepare(data_path, file_index, occlusion_list):
+def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=False, augmentation_num=1):
     '''
         file_index: string, like '000000'
     '''
@@ -91,6 +91,10 @@ def get_data_from_file_and_prepare(data_path, file_index, occlusion_list):
         plot_pointcloud(pc, args.use_mayavi)
 
     objects = loader.load_label(data_path + '/label_2/' + file_index + '.txt')
+
+    if len(objects) == 0:
+        print("no object")
+        return None
     '''
     for obj in objects:
         obj.print_data()
@@ -134,6 +138,13 @@ def get_data_from_file_and_prepare(data_path, file_index, occlusion_list):
             if not (obj.visibility in occlusion_list):
                 continue
             obj.print_data()
+
+            for _ in range(augmentation_num):
+                if perturbation_flag:
+                    pass
+                else:
+                    pass
+
             indices = in_hull(projected_pointcloud, obj.bb2d.get_hull())
             print('points in frustum')
             print('%d points' % projected_pointcloud[indices].shape[0])
@@ -206,11 +217,9 @@ def get_data_from_file_and_prepare(data_path, file_index, occlusion_list):
     if data is not None:
         if len(data.shape) == 1:
             data = data.reshape(1, -1)
-    else:
-        return []
-    return data.tolist()
+    return data
 
-def generate_data(prefix):
+def generate_data(prefix, occlusion_list, perturbation_flag=False, augmentation_num=1):
     index_file_name = os.path.join(DATASET_DIR, 'dataset_index', prefix + '.txt')
     print('load index from', index_file_name)
     data_index_list = ['%06d'%(int(line.rstrip())) for line in open(index_file_name)]
@@ -223,14 +232,13 @@ def generate_data(prefix):
     for index in tqdm(data_index_list):
         print('===========================')
         print('data: ', index)
-        data_ = get_data_from_file_and_prepare(data_path, index, occlusion_list)
+        data_ = get_data_from_file(data_path, index, occlusion_list, perturbation_flag, augmentation_num)
         if data_ is None:
             continue
         if data is not None:
-            # print(data.shape)
-            print(np.array(data).shape)
-            # data = np.vstack((data, data_))
-            data.append(data_)
+            print(data.shape)
+            # pprint(data)
+            data = np.vstack((data, data_))
         else:
             data = data_
 
@@ -252,6 +260,8 @@ if __name__ == '__main__':
     parser.add_argument('--train', action='store_true', help='make train data')
     parser.add_argument('--val', action='store_true', help='make validation data')
     parser.add_argument('--test', action='store_true', help='make test data')
+    parser.add_argument('--perturbation', action='store_true', help='perturb 2d bounding box')
+    parser.add_argument('--augmentation_num', action='store_true', help='number of data augmentation')
     args = parser.parse_args()
 
     if args.demo:
@@ -259,7 +269,7 @@ if __name__ == '__main__':
         occlusion_list = [int(x) for x in args.occlusion_list.split(',')]
         print(occlusion_list)
 
-        data = get_data_from_file_and_prepare(KITTI_TRAIN_PATH, test_index, occlusion_list)
+        data = get_data_from_file(KITTI_TRAIN_PATH, test_index, occlusion_list)
 
         print(data)
         output_file_name = DATASET_DIR + '/' + test_index + '.pickle'
@@ -275,10 +285,10 @@ if __name__ == '__main__':
         print('occlusion: ', occlusion_list)
         if args.train:
             print('=== generate train data ===')
-            generate_data('train')
+            generate_data('train', occlusion_list)
         if args.val:
             print('=== generate validation data ===')
-            generate_data('val')
+            generate_data('val', occlusion_list)
         if args.test:
             print('=== generate test data ===')
-            generate_data('test')
+            generate_data('test', occlusion_list)
