@@ -16,7 +16,6 @@ from mpl_toolkits.mplot3d import Axes3D
 import argparse
 import _pickle as pickle
 from tqdm import tqdm
-from multiprocessing import Process, Manager
 
 from kitti_object import Object
 from calibration import Calibration
@@ -215,16 +214,16 @@ def generate_data(prefix):
     index_file_name = os.path.join(DATASET_DIR, 'dataset_index', prefix + '.txt')
     print('load index from', index_file_name)
     data_index_list = ['%06d'%(int(line.rstrip())) for line in open(index_file_name)]
+    data_path = None
+    if prefix is 'train' or prefix is 'val':
+        data_path = KITTI_TRAIN_PATH
+    else:
+        data_path = KITTI_TEST_PATH
     data = None
     for index in tqdm(data_index_list):
         print('===========================')
         print('data: ', index)
-        data_ = None
-        if prefix is 'train' or prefix is 'val':
-            data_ = get_data_from_file_and_prepare(KITTI_TRAIN_PATH, index, occlusion_list)
-        else:
-            data_ = get_data_from_file_and_prepare(KITTI_TEST_PATH, index, occlusion_list)
-
+        data_ = get_data_from_file_and_prepare(data_path, index, occlusion_list)
         if data_ is None:
             continue
         if data is not None:
