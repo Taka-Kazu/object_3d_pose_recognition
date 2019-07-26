@@ -72,11 +72,11 @@ def get_closest_point(cloud):
             closest_distance = pt_distance
     return closest_point
 
-def get_data_from_file_and_prepare(file_index, occlusion_list):
+def get_data_from_file_and_prepare(data_path, file_index, occlusion_list):
     '''
         file_index: string, like '000000'
     '''
-    image = loader.load_image(KITTI_TRAIN_PATH + '/image_2/' + file_index + '.png')
+    image = loader.load_image(data_path + '/image_2/' + file_index + '.png')
     print(image.shape)
     if args.show_image:
         window_name = 'test'
@@ -85,18 +85,18 @@ def get_data_from_file_and_prepare(file_index, occlusion_list):
         cv2.waitKey(0)
         cv2.destroyWindow(window_name)
 
-    pc = loader.load_pointcloud(KITTI_TRAIN_PATH + '/velodyne/' + file_index + '.bin')
+    pc = loader.load_pointcloud(data_path + '/velodyne/' + file_index + '.bin')
     print(pc.shape)
     if args.show_pointcloud:
         plot_pointcloud(pc, args.use_mayavi)
 
-    objects = loader.load_label(KITTI_TRAIN_PATH + '/label_2/' + file_index + '.txt')
+    objects = loader.load_label(data_path + '/label_2/' + file_index + '.txt')
     '''
     for obj in objects:
         obj.print_data()
     '''
 
-    calib = loader.load_camera_calibration(KITTI_TRAIN_PATH + '/calib/' + file_index + '.txt')
+    calib = loader.load_camera_calibration(data_path + '/calib/' + file_index + '.txt')
     c = Calibration(calib)
     '''
     p = objects[0].bb3d.position.reshape(-1, 3)
@@ -210,12 +210,18 @@ def get_data_from_file_and_prepare(file_index, occlusion_list):
 
 def generate_data(prefix):
     index_file_name = os.path.join(DATASET_DIR, 'dataset_index', prefix + '.txt')
+    print('load index from', index_file_name)
     data_index_list = ['%06d'%(int(line.rstrip())) for line in open(index_file_name)]
     data = None
     for index in tqdm(data_index_list):
         print('===========================')
         print('data: ', index)
-        data_ = get_data_from_file_and_prepare(index, occlusion_list)
+        data_ = None
+        if prefix is 'train' or prefix is 'val':
+            data_ = get_data_from_file_and_prepare(KITTI_TRAIN_PATH, index, occlusion_list)
+        else:
+            data_ = get_data_from_file_and_prepare(KITTI_TEST_PATH, index, occlusion_list)
+
         if data_ is None:
             continue
         if data is not None:
@@ -223,15 +229,15 @@ def generate_data(prefix):
             data = np.vstack((data, data_))
         else:
             data = data_
+
     output_file_name = os.path.join(DATASET_DIR, prefix + '.pickle')
     with open(output_file_name, 'wb') as fp:
         pickle.dump(data, fp)
     print('saved as ' + output_file_name)
 
-# for test
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--test_file_index', help='default: 000000', default='000000')
+    parser.add_argument('--demo_file_index', help='default: 000000', default='000000')
     parser.add_argument('--show_image', action='store_true')
     parser.add_argument('--show_pointcloud', action='store_true')
     parser.add_argument('--use_mayavi', action='store_true')
@@ -240,15 +246,16 @@ if __name__ == '__main__':
     parser.add_argument('--occlusion_list', help='default: 0,1,2', default='0,1,2')
     parser.add_argument('--demo', action='store_true')
     parser.add_argument('--train', action='store_true', help='make train data')
+    parser.add_argument('--val', action='store_true', help='make validation data')
     parser.add_argument('--test', action='store_true', help='make test data')
     args = parser.parse_args()
 
     if args.demo:
-        test_index = args.test_file_index
+        test_index = args.demo_file_index
         occlusion_list = [int(x) for x in args.occlusion_list.split(',')]
         print(occlusion_list)
 
-        data = get_data_from_file_and_prepare(test_index, occlusion_list)
+        data = get_data_from_file_and_prepare(KITTI_TRAIN_PATH, test_index, occlusion_list)
 
         print(data)
         output_file_name = DATASET_DIR + '/' + test_index + '.pickle'
@@ -265,6 +272,9 @@ if __name__ == '__main__':
         if args.train:
             print('=== generate train data ===')
             generate_data('train')
+        if args.val:
+            print('=== generate validation data ===')
+            generate_data('val')
         if args.test:
             print('=== generate test data ===')
             generate_data('test')
