@@ -11,7 +11,7 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 
 class Network(nn.Module):
-    def __init__(self, class_num):
+    def __init__(self, class_num, hidden_num=256):
         super(Network, self).__init__()
         self.class_num = class_num
         # right
@@ -25,7 +25,7 @@ class Network(nn.Module):
         self.dy = 0.1
         self.dim_y = int((self.max_y - self.min_y) / self.dy) + 1
         # front
-        self.min_z = -1.0
+        self.min_z = -5.0
         self.max_z = 5.0
         self.dz = 0.1
         self.dim_z = int((self.max_z - self.min_z) / self.dz) + 1
@@ -49,17 +49,17 @@ class Network(nn.Module):
 
         self.input_onehot = nn.Linear(self.class_num, 16)
         self.fc1 = nn.Linear(16, 1)
-        self.input_3d = nn.Linear(14, 64)
-        self.fc2 = nn.Linear(64, 63)
-        self.fc3 = nn.Linear(64, 64)
-        self.fc4 = nn.Linear(64, 64)
-        self.prob_x = nn.Linear(64, self.dim_x)
-        self.prob_y = nn.Linear(64, self.dim_y)
-        self.prob_z = nn.Linear(64, self.dim_z)
-        self.prob_yaw = nn.Linear(64, self.dim_yaw)
-        self.prob_h = nn.Linear(64, self.dim_h)
-        self.prob_w = nn.Linear(64, self.dim_w)
-        self.prob_l = nn.Linear(64, self.dim_l)
+        self.input_3d = nn.Linear(14, hidden_num)
+        self.fc2 = nn.Linear(hidden_num, hidden_num-1)
+        self.fc3 = nn.Linear(hidden_num, hidden_num)
+        self.fc4 = nn.Linear(hidden_num, hidden_num)
+        self.prob_x = nn.Linear(hidden_num, self.dim_x)
+        self.prob_y = nn.Linear(hidden_num, self.dim_y)
+        self.prob_z = nn.Linear(hidden_num, self.dim_z)
+        self.prob_yaw = nn.Linear(hidden_num, self.dim_yaw)
+        self.prob_h = nn.Linear(hidden_num, self.dim_h)
+        self.prob_w = nn.Linear(hidden_num, self.dim_w)
+        self.prob_l = nn.Linear(hidden_num, self.dim_l)
 
     def forward(self, data):
         a_3d_vec = data[:, 0:14]
