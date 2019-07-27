@@ -28,26 +28,41 @@ def train(args, model, device, train_loader, optimizer, criterion, epoch):
 
     model.train()
 
-    train_loss = 0
-
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         # print("shape: ", data.size())
-        output = model(data)
-        loss = criterion(output, target)
-        train_loss += loss
+        prob_x, prob_y, prob_z, prob_yaw, prob_h, prob_w, prob_l = model(data)
+        label_x = ((target[:, 0] - data[:, 14] - torch.tensor([model.min_x]*len(data), device=device)) / model.dx).long()
+        # print(prob_x)
+        # print(data[:, 14])
+        # print(target[:, 0] - data[:, 14])
+        # print(label_x)
+        # print(((target[:, 3] - torch.tensor([model.min_yaw] * len(data), device=device)) / model.dyaw).long().shape)
+        # print(prob_yaw.shape)
+        loss = 0
+        label_x = ((target[:, 0] - data[:, 14] - torch.tensor([model.min_x] * len(data), device=device)) / model.dx).long()
+        loss += criterion(prob_x, label_x)
+        label_y = ((target[:, 1] - data[:, 15] - torch.tensor([model.min_y] * len(data), device=device)) / model.dy).long()
+        loss += criterion(prob_y, label_y)
+        label_z = ((target[:, 2] - data[:, 16] - torch.tensor([model.min_z] * len(data), device=device)) / model.dz).long()
+        loss += criterion(prob_z, label_z)
+        label_yaw = ((target[:, 3] - torch.tensor([model.min_yaw] * len(data), device=device)) / model.dyaw).long()
+        loss += criterion(prob_yaw, label_yaw)
+        label_h = ((target[:, 4] - torch.tensor([model.min_h] * len(data), device=device)) / model.dh).long()
+        loss += criterion(prob_h, label_h)
+        label_w = ((target[:, 5] - torch.tensor([model.min_w] * len(data), device=device)) / model.dw).long()
+        loss += criterion(prob_w, label_w)
+        label_l = ((target[:, 6] - torch.tensor([model.min_l] * len(data), device=device)) / model.dl).long()
+        loss += criterion(prob_l, label_l)
         loss.backward()
         optimizer.step()
-        # if batch_idx % args.log_interval == 0:
-        #     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-        #         epoch, batch_idx * len(data), len(train_loader.dataset),
-        #         100. * batch_idx / len(train_loader), loss.item()))
-        # train_writer.add_scalar('loss', loss, training_step)
+        if batch_idx % args.log_interval == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(data), len(train_loader.dataset),
+                100. * batch_idx / len(train_loader), loss.item()))
+        train_writer.add_scalar('loss', loss, training_step)
         training_step += 1
-    train_loss /= len(train_loader)
-    print('Train Epoch: {}\tAverage Loss: {:.6f}'.format(epoch, train_loss))
-    train_writer.add_scalar('loss', train_loss, training_step)
 
 def validation(args, model, device, test_loader, criterion):
     global training_step
@@ -60,8 +75,23 @@ def validation(args, model, device, test_loader, criterion):
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
-            output = model(data)
-            test_loss += criterion(output, target)
+            prob_x, prob_y, prob_z, prob_yaw, prob_h, prob_w, prob_l = model(data)
+            loss = 0
+            label_x = ((target[:, 0] - data[:, 14] - torch.tensor([model.min_x] * len(data), device=device)) / model.dx).long()
+            loss += criterion(prob_x, label_x)
+            label_y = ((target[:, 1] - data[:, 15] - torch.tensor([model.min_y] * len(data), device=device)) / model.dy).long()
+            loss += criterion(prob_y, label_y)
+            label_z = ((target[:, 2] - data[:, 16] - torch.tensor([model.min_z] * len(data), device=device)) / model.dz).long()
+            loss += criterion(prob_z, label_z)
+            label_yaw = ((target[:, 3] - torch.tensor([model.min_yaw] * len(data), device=device)) / model.dyaw).long()
+            loss += criterion(prob_yaw, label_yaw)
+            label_h = ((target[:, 4] - torch.tensor([model.min_h] * len(data), device=device)) / model.dh).long()
+            loss += criterion(prob_h, label_h)
+            label_w = ((target[:, 5] - torch.tensor([model.min_w] * len(data), device=device)) / model.dw).long()
+            loss += criterion(prob_w, label_w)
+            label_l = ((target[:, 6] - torch.tensor([model.min_l] * len(data), device=device)) / model.dl).long()
+            loss += criterion(prob_l, label_l)
+            test_loss += loss
     test_loss /= len(test_loader)
     print('\nValidation set: Average loss: {:.4f}\n'.format(test_loss))
     validation_writer.add_scalar('loss', test_loss, training_step)
@@ -95,17 +125,17 @@ def main():
         ObjectDataset(os.path.dirname(os.path.abspath(__file__)) + '/../kitti', 'train', transform=transforms.Compose([
             ToTensor()
         ])),
-        batch_size=args.batch_size, shuffle=True, **kwargs)
+        batch_size=args.batch_size, shuffle=False, **kwargs)
 
     test_loader = torch.utils.data.DataLoader(
         ObjectDataset(os.path.dirname(os.path.abspath(__file__)) + '/../kitti', 'val', transform=transforms.Compose([
             ToTensor()
         ])),
-        batch_size=args.batch_size, shuffle=True, **kwargs)
+        batch_size=args.batch_size, shuffle=False, **kwargs)
 
     model = Network(3).to(device)
 
-    criterion = nn.MSELoss()
+    criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     print('output log file to', log_directory)
