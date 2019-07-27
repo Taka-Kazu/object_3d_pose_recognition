@@ -131,13 +131,15 @@ def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=
     data = None
     for obj in objects:
         if obj.type == 'Pedestrian' or obj.type == 'Car':
-            if obj.bb3d.position[2] < args.min_distance_limit:
+            distance_to_obj = np.linalg.norm(obj.bb3d.position)
+            if distance_to_obj < args.min_distance_limit:
                 continue
-            if obj.bb3d.position[2] > args.max_distance_limit:
+            if distance_to_obj > args.max_distance_limit:
                 continue
             if not (obj.visibility in occlusion_list):
                 continue
             obj.print_data()
+            print('distance to obj: ', distance_to_obj, '[m]')
 
             for _ in range(augmentation_num):
                 if perturbation_flag:
