@@ -16,7 +16,7 @@ class PCA:
         data = data[:, 0:3]
         n = data.shape[0]
         m = data.shape[1]
-        mean = np.mean(data, axis=0)
+        self.centroid = np.mean(data, axis=0)
         covariance = np.cov(data.transpose())
         eigen_value, eigen_vector = np.linalg.eig(covariance)
         eigen_vector = eigen_vector.transpose()
@@ -31,3 +31,6 @@ class PCA:
 
     def get_eigen_value(self):
         return self.eigen_value
+
+    def get_centroid(self):
+        return self.centroid

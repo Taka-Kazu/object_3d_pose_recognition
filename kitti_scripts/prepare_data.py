@@ -177,10 +177,10 @@ def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=
             print(eigen_value)
             eigen_vector = pca.get_eigen_vector()
             print(eigen_vector)
-            closest_point = get_closest_point(object_pc[:, 0:3])
-            print('closest point: ', closest_point)
+            centroid = pca.get_centroid()
+            print('centroid: ', centroid)
             bb_points = obj.bb2d.get_hull()
-            d_list = np.full((bb_points.shape[0], 1), closest_point[2])
+            d_list = np.full((bb_points.shape[0], 1), centroid[2])
             # add depth
             bb_points = np.hstack((bb_points, d_list))
             bb_points = c.translate_p2_image_to_p0_camera(bb_points)
@@ -192,7 +192,7 @@ def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=
             ## input data
             data_ = np.hstack((eigen_vector, eigen_value.reshape(-1, 1))).reshape(-1)
             data_ = np.hstack((data_, w, h))
-            data_ = np.hstack((data_, closest_point))
+            data_ = np.hstack((data_, centroid))
             data_ = np.hstack((data_, obj.type))
             ## label
             data_ = np.hstack((data_, file_index))
