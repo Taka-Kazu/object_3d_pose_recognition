@@ -26,7 +26,8 @@ RUN pip3 install numpy \
                  jupyter \
                  keras \
                  opencv-python \
-                 pillow
+                 pillow \
+                 cython
 
 # nvidia environment
 # for 1
