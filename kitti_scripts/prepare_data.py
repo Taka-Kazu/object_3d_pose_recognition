@@ -93,8 +93,10 @@ def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=
     objects = loader.load_label(data_path + '/label_2/' + file_index + '.txt')
 
     if len(objects) == 0:
-        print("no object")
+        print("\033[31mno object\033[0m")
         return None
+    else:
+        print(len(objects), 'objects in dataset')
     '''
     for obj in objects:
         obj.print_data()
@@ -133,10 +135,13 @@ def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=
         if obj.type == 'Pedestrian' or obj.type == 'Car':
             distance_to_obj = np.linalg.norm(obj.bb3d.position)
             if distance_to_obj < args.min_distance_limit:
+                print("\033[31mthe object is too close\033[0m")
                 continue
             if distance_to_obj > args.max_distance_limit:
+                print("\033[31mthe object is too far\033[0m")
                 continue
             if not (obj.visibility in occlusion_list):
+                print("\033[31mthe visibility of the object is not acceptable\033[0m")
                 continue
             obj.print_data()
             print('distance to obj: ', distance_to_obj, '[m]')
@@ -151,7 +156,7 @@ def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=
             print('points in frustum')
             print('%d points' % projected_pointcloud[indices].shape[0])
             if projected_pointcloud[indices].shape[0] == 0:
-                print("no point in 2d bounding box")
+                print("\033[31mno point in 2d bounding box\033[0m")
                 continue
             object_pc = np.hstack((projected_pointcloud[indices], pc[indices, 0:1]))
             object_pc = c.translate_p2_image_to_p0_camera(object_pc)
@@ -166,7 +171,7 @@ def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=
             ec = EuclideanClustering()
             cluster_indices = ec.calculate(object_pc)
             if len(cluster_indices) == 0:
-                print('no cluster!')
+                print('\033[31mno cluster!\033[0m')
                 continue
             object_pc = object_pc[cluster_indices[0]]
             print('cluster num: %d' % len(cluster_indices))
@@ -181,6 +186,9 @@ def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=
             print(eigen_vector)
             centroid = pca.get_centroid()
             print('centroid: ', centroid)
+            if np.linalg.norm(centroid - obj.bb3d.position) > 3.0:# 3.0[m]
+                print('\033[31mmaybe clustering error\033[0m')
+                continue
             bb_points = obj.bb2d.get_hull()
             d_list = np.full((bb_points.shape[0], 1), centroid[2])
             # add depth
