@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 import os
+import numpy as np
 import _pickle as pickle
 import torch
 import torch.utils.data
@@ -41,8 +42,8 @@ class ObjectDataset(torch.utils.data.Dataset):
     def __init__(self, dir_name, prefix, transform=None):
         self.transform = transform
         self.data_num = 0
-        self.data = []
-        self.label = []
+        data = []
+        label = []
         self.classes = []
         with open(os.path.dirname(os.path.abspath(__file__)) + '/classes.txt', 'r') as fp:
             for line in fp:
@@ -68,21 +69,20 @@ class ObjectDataset(torch.utils.data.Dataset):
             #print(data[0, 0:18])
             #print(data[0, 19:26])
             self.data_num = len(data)
-            self.data = self.get_float_data(data[:, 0:18])
-            self.label = self.get_float_data(data[:, 19:26])
+            data_ = self.get_float_data(data[:, 0:18])
+            label_ = self.get_float_data(data[:, 19:26])
+            self.sample = {'label': label_, 'data': data_}
 
     def __len__(self):
         return self.data_num
 
     def __getitem__(self, idx):
-        output_data = self.data[idx]
-        output_label = self.label[idx]
+        output_sample = {'label': self.sample['label'][idx], 'data': self.sample['data'][idx]}
 
         if self.transform:
-            output_data = self.transform(output_data)
-            output_label = self.transform(output_label)
+            output_sample = self.transform(output_sample)
 
-        return (output_data, output_label)
+        return (output_sample['data'], output_sample['label'])
 
     def get_float_data(self, dataset):
         _data = [[float(x) for x in data] for data in dataset]
@@ -94,7 +94,17 @@ class ObjectDataset(torch.utils.data.Dataset):
 
 class ToTensor(object):
     def __call__(self, sample):
-        sample = torch.Tensor(sample)
+        sample = {'label': torch.Tensor(sample['label']), 'data': torch.Tensor(sample['data'])}
+        return sample
+
+class RandomHorizontalFlip(object):
+    def __call__(self, sample):
+        if np.random.rand() > 0.5:
+            sample['label'][19 - 19] *= -1
+            sample['data'][14] *= -1
+            sample['data'][0] *= -1
+            sample['data'][4] *= -1
+            sample['data'][8] *= -1
         return sample
 
 if __name__ == '__main__':
@@ -104,7 +114,8 @@ if __name__ == '__main__':
     # print(len(dataset))
     data_loader = torch.utils.data.DataLoader(
         ObjectDataset(os.path.dirname(os.path.abspath(__file__)) + '/../kitti', 'train', transform=transforms.Compose([
-            ToTensor()
+            ToTensor(),
+            RandomHorizontalFlip()
         ])),
         batch_size=32, shuffle=False)
     print(len(data_loader))

@@ -5,6 +5,7 @@ from __future__ import print_function
 import argparse
 import os
 import datetime
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -14,13 +15,16 @@ from torchvision import datasets, transforms
 from torch.utils.tensorboard import SummaryWriter
 
 from network import Network
-from dataset import ObjectDataset, ToTensor
+from dataset import ObjectDataset, ToTensor, RandomHorizontalFlip
 
 log_directory = os.path.dirname(os.path.abspath(__file__)) + '/../logs/' + '{0:%Y%m%d%H%M%S}'.format(datetime.datetime.now())
 
 training_step = 0
 train_writer = SummaryWriter(log_dir=log_directory+'/train')
 validation_writer = SummaryWriter(log_dir=log_directory+'/val')
+
+def init_worker_seed(worker_id):
+    np.random.seed(np.random.get_state()[1][0] + worker_id)
 
 def train(args, model, device, train_loader, optimizer, criterion, epoch):
     global training_step
@@ -131,11 +135,12 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    kwargs = {'num_workers': 1, 'pin_memory': True}
+    kwargs = {'num_workers': 1, 'pin_memory': True, 'worker_init_fn': init_worker_seed}
 
     train_loader = torch.utils.data.DataLoader(
         ObjectDataset(os.path.dirname(os.path.abspath(__file__)) + '/../kitti', 'train', transform=transforms.Compose([
-            ToTensor()
+            ToTensor(),
+            RandomHorizontalFlip()
         ])),
         batch_size=args.batch_size, shuffle=args.randam_batch, **kwargs)
 
