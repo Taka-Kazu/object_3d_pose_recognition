@@ -17,17 +17,17 @@ class Network(nn.Module):
         # right
         self.min_x = -5.0
         self.max_x = 5.0
-        self.dx = 0.1
+        self.dx = 0.5
         self.dim_x = int((self.max_x - self.min_x) / self.dx) + 1
         # under
         self.min_y = -5.0
         self.max_y = 5.0
-        self.dy = 0.1
+        self.dy = 0.5
         self.dim_y = int((self.max_y - self.min_y) / self.dy) + 1
         # front
         self.min_z = -5.0
         self.max_z = 5.0
-        self.dz = 0.1
+        self.dz = 0.5
         self.dim_z = int((self.max_z - self.min_z) / self.dz) + 1
 
         self.min_yaw = -m.pi
@@ -36,15 +36,15 @@ class Network(nn.Module):
         self.dim_yaw = int((self.max_yaw - self.min_yaw) / self.dyaw) + 1
         self.min_h = 0.0
         self.max_h = 5.0
-        self.dh = 0.2
+        self.dh = 0.5
         self.dim_h = int((self.max_h - self.min_h) / self.dh) + 1
         self.min_w = 0.0
         self.max_w = 10.0
-        self.dw = 0.2
+        self.dw = 0.5
         self.dim_w = int((self.max_w - self.min_w) / self.dw) + 1
         self.min_l = 0.0
         self.max_l = 10.0
-        self.dl = 0.2
+        self.dl = 0.5
         self.dim_l = int((self.max_l - self.min_l) / self.dl) + 1
 
         self.input_onehot = nn.Linear(self.class_num, 16)
@@ -78,13 +78,13 @@ class Network(nn.Module):
         c = F.relu(self.fc3(c))
         c = F.relu(self.fc4(c))
 
-        prob_x = F.softmax(self.prob_x(c), dim=1)
-        prob_y = F.softmax(self.prob_y(c), dim=1)
-        prob_z = F.softmax(self.prob_z(c), dim=1)
-        prob_yaw = F.softmax(self.prob_yaw(c), dim=1)
-        prob_h = F.softmax(self.prob_h(c), dim=1)
-        prob_w = F.softmax(self.prob_w(c), dim=1)
-        prob_l = F.softmax(self.prob_l(c), dim=1)
+        prob_x = F.log_softmax(self.prob_x(c), dim=1)
+        prob_y = F.log_softmax(self.prob_y(c), dim=1)
+        prob_z = F.log_softmax(self.prob_z(c), dim=1)
+        prob_yaw = F.log_softmax(self.prob_yaw(c), dim=1)
+        prob_h = F.log_softmax(self.prob_h(c), dim=1)
+        prob_w = F.log_softmax(self.prob_w(c), dim=1)
+        prob_l = F.log_softmax(self.prob_l(c), dim=1)
 
         return (prob_x, prob_y, prob_z, prob_yaw, prob_h, prob_w, prob_l)
 
