@@ -47,31 +47,33 @@ cdef class EuclideanClustering:
         data = data_[:, 0:3].tolist()
         cdef int n = len(data)
         tree = ss.cKDTree(data, leafsize=self.leaf_size)
-        cdef list queue = []
+        cdef set queue = set()
         cdef list cluster_indices_list = []
-        cdef list computed_indices_list = []
+        cdef set computed_indices = set()
         cdef int i, j, index
-        cdef list indices, _indices
+        cdef set indices = set(), _indices = set()
         cdef list p
         cdef bool computed_flag, max_flag
+        cdef int cluster_num, count
+        cdef list buff
 
         cdef np.ndarray[object, ndim=1] ball_points_list = tree.query_ball_point(data, self.tolerance)
         cdef dict ball_points_dict = dict(zip(range(len(data)), ball_points_list))
 
         for i in range(n):
-            computed_flag = i in computed_indices_list
+            computed_flag = i in computed_indices
             if not computed_flag:
-                queue.append(i)
+                queue.add(i)
                 max_flag = False
-                for j in queue:
+                for j in list(queue):
                     p = data[j]
-                    indices = ball_points_dict[j]
-                    _indices = list(set(indices) & set(computed_indices_list))
-                    indices = list(set(indices) ^ set(_indices))
+                    indices = set(ball_points_dict[j])
+                    _indices = indices & computed_indices
+                    indices = indices ^ _indices
                     for index in indices:
                         if not (index in queue):
                             #print('index was added to queue')
-                            queue.append(index)
+                            queue.add(index)
                             if len(queue) == self.max_cluster_size:
                                 max_flag = True
                                 break
@@ -81,9 +83,10 @@ cdef class EuclideanClustering:
                             pass
                     if max_flag:
                         break
-                cluster_indices_list.append(queue[:])
-                computed_indices_list.extend(queue[:])
-                del queue[:]
+                cluster_indices_list.append(list(queue)[:])
+                computed_indices |= queue
+                queue.clear()
+
         # sort
         cluster_num = len(cluster_indices_list)
         while True:
@@ -96,7 +99,7 @@ cdef class EuclideanClustering:
                     count += 1
             if count == 0:
                 break
-        for indices in cluster_indices_list[:]:
-            if len(indices) < self.min_cluster_size:
-                cluster_indices_list.remove(indices)
+        for cluster_indices in cluster_indices_list[:]:
+            if len(cluster_indices) < self.min_cluster_size:
+                cluster_indices_list.remove(cluster_indices)
         return cluster_indices_list
