@@ -72,6 +72,22 @@ def get_closest_point(cloud):
             closest_distance = pt_distance
     return closest_point
 
+def perturb_bb2d(bb2d, ratio=0.1):
+    bb2d_ = bb2d
+    h = bb2d.ymax - bb2d.ymin
+    w = bb2d.xmin - bb2d.xmax
+    center_x = (bb2d.xmin + bb2d.xmax) / 2.0
+    center_y = (bb2d.ymin + bb2d.ymax) / 2.0
+    center_x_ = center_x + w * ratio * (np.random.random() * 2 - 1)
+    center_y_ = center_y + h * ratio * (np.random.random() * 2 - 1)
+    h_ = h * (1 + ratio * (2 * np.random.random() - 1))
+    w_ = w * (1 + ratio * (2 * np.random.random() - 1))
+    bb2d_.xmin = center_x_ - w_ / 2.0
+    bb2d_.xmax = center_x_ + w_ / 2.0
+    bb2d_.ymin = center_y_ - h_ / 2.0
+    bb2d_.ymax = center_y_ + h_ / 2.0
+    return bb2d_
+
 def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=False, augmentation_num=1):
     '''
         file_index: string, like '000000'
@@ -131,6 +147,9 @@ def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=
     projected_pointcloud = c.translate_velodyne_to_p2_image(pc_without_intensity)
 
     data = None
+    if not perturbation_flag:
+        augmentation_num = 1
+
     for obj in objects:
         if obj.type == 'Pedestrian' or obj.type == 'Car':
             distance_to_obj = np.linalg.norm(obj.bb3d.position)
@@ -146,84 +165,90 @@ def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=
             obj.print_data()
             print('distance to obj: ', distance_to_obj, '[m]')
 
-            for _ in range(augmentation_num):
+            for augmentation_count in range(augmentation_num):
+                print('augmentation loop:{}/{}'.format(augmentation_count, augmentation_num))
+                bb2d = None
                 if perturbation_flag:
-                    pass
+                    bb2d = perturb_bb2d(obj.bb2d)
                 else:
-                    pass
-
-            indices = in_hull(projected_pointcloud, obj.bb2d.get_hull())
-            print('points in frustum')
-            print('%d points' % projected_pointcloud[indices].shape[0])
-            if projected_pointcloud[indices].shape[0] == 0:
-                print("\033[31mno point in 2d bounding box\033[0m")
-                continue
-            object_pc = np.hstack((projected_pointcloud[indices], pc[indices, 0:1]))
-            object_pc = c.translate_p2_image_to_p0_camera(object_pc)
-            # restore intensity
-            object_pc = np.hstack((object_pc, pc[indices, 2:3]))
-            # delete z < 0 (behind camera)
-            object_pc = np.delete(object_pc, np.where(object_pc[:, 2] < 0), axis=0)
-            print('delete behind camera')
-            print('%d points' % object_pc.shape[0])
-            if args.show_pointcloud:
-                plot_pointcloud(object_pc, args.use_mayavi)
-            ec = EuclideanClustering()
-            cluster_indices = ec.calculate(object_pc)
-            if len(cluster_indices) == 0:
-                print('\033[31mno cluster!\033[0m')
-                continue
-            object_pc = object_pc[cluster_indices[0]]
-            print('cluster num: %d' % len(cluster_indices))
-            print('final cluster')
-            print('%d points' % object_pc.shape[0])
-            if args.show_pointcloud:
-                plot_pointcloud(object_pc, args.use_mayavi)
-            pca = PCA(object_pc)
-            eigen_value = pca.get_eigen_value()
-            print(eigen_value)
-            eigen_vector = pca.get_eigen_vector()
-            print(eigen_vector)
-            centroid = pca.get_centroid()
-            print('centroid: ', centroid)
-            if np.linalg.norm(centroid - obj.bb3d.position) > 3.0:# 3.0[m]
-                print('\033[31mmaybe clustering error\033[0m')
-                continue
-            bb_points = obj.bb2d.get_hull()
-            d_list = np.full((bb_points.shape[0], 1), centroid[2])
-            # add depth
-            bb_points = np.hstack((bb_points, d_list))
-            bb_points = c.translate_p2_image_to_p0_camera(bb_points)
-            #print(bb_points)
-            w = bb_points[2, 0] - bb_points[0, 0]
-            h = bb_points[1, 1] - bb_points[0, 1]
-            print((w, h))
-            # make data
-            ## input data
-            data_ = np.hstack((eigen_vector, eigen_value.reshape(-1, 1))).reshape(-1)
-            data_ = np.hstack((data_, w, h))
-            data_ = np.hstack((data_, centroid))
-            data_ = np.hstack((data_, obj.type))
-            ## label
-            data_ = np.hstack((data_, file_index))
-            data_ = np.hstack((data_, obj.bb3d.position))
-            data_ = np.hstack((data_, obj.bb3d.yaw))
-            data_ = np.hstack((data_, obj.bb3d.size))
-            object_pc_on_image = c.translate_p0_camera_to_p2_image(object_pc[:, 0:3])
-            if args.show_image:
-                img = image.copy()
-                for pt in object_pc_on_image:
-                    cv2.circle(img, (int(pt[0]), int(pt[1])), 1, (0, 0, 255), -1)
-                cv2.rectangle(img, (obj.bb2d.xmin, obj.bb2d.ymin), (obj.bb2d.xmax, obj.bb2d.ymax), (255, 0, 0), 2)
-                window_name = 'test'
-                cv2.namedWindow(window_name)
-                cv2.imshow(window_name, img)
-                cv2.waitKey(0)
-                cv2.destroyWindow(window_name)
-            if data is not None:
-                data = np.vstack((data, data_))
-            else:
-                data = data_
+                    bb2d = obj.bb2d
+                print(bb2d)
+                indices = in_hull(projected_pointcloud, bb2d.get_hull())
+                print('points in frustum')
+                print('%d points' % projected_pointcloud[indices].shape[0])
+                if projected_pointcloud[indices].shape[0] == 0:
+                    print("\033[31mno point in 2d bounding box\033[0m")
+                    continue
+                object_pc = np.hstack((projected_pointcloud[indices], pc[indices, 0:1]))
+                object_pc = c.translate_p2_image_to_p0_camera(object_pc)
+                # restore intensity
+                object_pc = np.hstack((object_pc, pc[indices, 2:3]))
+                # delete z < 0 (behind camera)
+                object_pc = np.delete(object_pc, np.where(object_pc[:, 2] < 0), axis=0)
+                print('delete behind camera')
+                print('%d points' % object_pc.shape[0])
+                if not(object_pc.shape[0] > 0):
+                    print('\033[31mno points remained\033[0m')
+                    continue
+                if args.show_pointcloud:
+                    plot_pointcloud(object_pc, args.use_mayavi)
+                ec = EuclideanClustering()
+                cluster_indices = ec.calculate(object_pc)
+                if len(cluster_indices) == 0:
+                    print('\033[31mno cluster!\033[0m')
+                    continue
+                object_pc = object_pc[cluster_indices[0]]
+                print('cluster num: %d' % len(cluster_indices))
+                print('final cluster')
+                print('%d points' % object_pc.shape[0])
+                if args.show_pointcloud:
+                    plot_pointcloud(object_pc, args.use_mayavi)
+                pca = PCA(object_pc)
+                eigen_value = pca.get_eigen_value()
+                print(eigen_value)
+                eigen_vector = pca.get_eigen_vector()
+                print(eigen_vector)
+                centroid = pca.get_centroid()
+                print('centroid: ', centroid)
+                if np.linalg.norm(centroid - obj.bb3d.position) > 3.0:# 3.0[m]
+                    print('\033[31mmaybe clustering error\033[0m')
+                    continue
+                bb_points = bb2d.get_hull()
+                d_list = np.full((bb_points.shape[0], 1), centroid[2])
+                # add depth
+                bb_points = np.hstack((bb_points, d_list))
+                bb_points = c.translate_p2_image_to_p0_camera(bb_points)
+                #print(bb_points)
+                w = bb_points[2, 0] - bb_points[0, 0]
+                h = bb_points[1, 1] - bb_points[0, 1]
+                print((w, h))
+                # make data
+                ## input data
+                data_ = np.hstack((eigen_vector, eigen_value.reshape(-1, 1))).reshape(-1)
+                data_ = np.hstack((data_, w, h))
+                data_ = np.hstack((data_, centroid))
+                data_ = np.hstack((data_, obj.type))
+                ## label
+                data_ = np.hstack((data_, file_index))
+                data_ = np.hstack((data_, obj.bb3d.position))
+                data_ = np.hstack((data_, obj.bb3d.yaw))
+                data_ = np.hstack((data_, obj.bb3d.size))
+                object_pc_on_image = c.translate_p0_camera_to_p2_image(object_pc[:, 0:3])
+                if args.show_image:
+                    img = image.copy()
+                    for pt in object_pc_on_image:
+                        cv2.circle(img, (int(pt[0]), int(pt[1])), 1, (0, 0, 255), -1)
+                    cv2.rectangle(img, (bb2d.xmin, bb2d.ymin), (bb2d.xmax, bb2d.ymax), (255, 0, 0), 2)
+                    window_name = 'test'
+                    cv2.namedWindow(window_name)
+                    cv2.imshow(window_name, img)
+                    cv2.waitKey(0)
+                    cv2.destroyWindow(window_name)
+                if data is not None:
+                    data = np.vstack((data, data_))
+                else:
+                    data = data_
+                print('data was added to dataset')
     if data is not None:
         if len(data.shape) == 1:
             data = data.reshape(1, -1)
@@ -271,7 +296,7 @@ if __name__ == '__main__':
     parser.add_argument('--val', action='store_true', help='make validation data')
     parser.add_argument('--test', action='store_true', help='make test data')
     parser.add_argument('--perturbation', action='store_true', help='perturb 2d bounding box')
-    parser.add_argument('--augmentation_num', action='store_true', help='number of data augmentation')
+    parser.add_argument('--augmentation_num', help='number of data augmentation', default='1')
     args = parser.parse_args()
 
     if args.demo:
@@ -292,10 +317,11 @@ if __name__ == '__main__':
             print(data)
     else:
         occlusion_list = [int(x) for x in args.occlusion_list.split(',')]
+        augmentation_num = int(args.augmentation_num)
         print('occlusion: ', occlusion_list)
         if args.train:
             print('=== generate train data ===')
-            generate_data('train', occlusion_list)
+            generate_data('train', occlusion_list, perturbation_flag=args.perturbation, augmentation_num=augmentation_num)
         if args.val:
             print('=== generate validation data ===')
             generate_data('val', occlusion_list)

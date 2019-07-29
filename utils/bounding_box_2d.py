@@ -3,7 +3,7 @@
 
 import numpy as np
 
-class BoundingBox2d:
+class BoundingBox2d(object):
     def __init__(self, data):
         self.bb = np.array(data)
         self.xmin = int(self.bb[0])
@@ -17,3 +17,6 @@ class BoundingBox2d:
                          [self.xmin, self.ymax],
                          [self.xmax, self.ymin],
                          [self.xmax, self.ymax]])
+
+    def __repr__(self):
+        return '<xmin: {}, xmax: {}, ymin: {}, ymax: {}>'.format(self.xmin, self.xmax, self.ymin, self.ymax)
