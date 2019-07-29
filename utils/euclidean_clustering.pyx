@@ -55,15 +55,17 @@ cdef class EuclideanClustering:
         cdef list p
         cdef bool computed_flag, max_flag
 
+        cdef np.ndarray[object, ndim=1] ball_points_list = tree.query_ball_point(data, self.tolerance)
+        cdef dict ball_points_dict = dict(zip(range(len(data)), ball_points_list))
+
         for i in range(n):
-            # computed_flag = self.is_computed_index(i, computed_indices_list)
             computed_flag = i in computed_indices_list
             if not computed_flag:
                 queue.append(i)
                 max_flag = False
                 for j in queue:
                     p = data[j]
-                    indices = tree.query_ball_point(p, self.tolerance)
+                    indices = ball_points_dict[j]
                     _indices = list(set(indices) & set(computed_indices_list))
                     indices = list(set(indices) ^ set(_indices))
                     for index in indices:
