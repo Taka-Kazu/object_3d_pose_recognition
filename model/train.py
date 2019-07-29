@@ -123,8 +123,8 @@ def main():
                         help='learning rate (default: 0.001)')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
-    parser.add_argument('--randam-batch', action='store_true', default=False,
-                        help='if true, randamly sample batch')
+    parser.add_argument('--random-batch', action='store_true', default=False,
+                        help='if true, randomly sample batch')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
     parser.add_argument('--save-model', action='store_true', default=False,
@@ -142,7 +142,7 @@ def main():
             ToTensor(),
             RandomHorizontalFlip()
         ])),
-        batch_size=args.batch_size, shuffle=args.randam_batch, **kwargs)
+        batch_size=args.batch_size, shuffle=args.random_batch, **kwargs)
 
     test_loader = torch.utils.data.DataLoader(
         ObjectDataset(os.path.dirname(os.path.abspath(__file__)) + '/../kitti', 'val', transform=transforms.Compose([
