@@ -111,6 +111,8 @@ def main():
                         help='number of epochs to train (default: 1000)')
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.001)')
+    parser.add_argument('--momentum', type=float, default=0.9, metavar='LR',
+                        help='SGD momuntum (default: 0.9)')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     parser.add_argument('--random-batch', action='store_true', default=False,
@@ -144,13 +146,15 @@ def main():
 
     # criterion = nn.CrossEntropyLoss()
     criterion = F.nll_loss
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    # optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
     print('output log file to', log_directory)
 
     min_val_loss = 1e6
     model_file = os.path.dirname(os.path.abspath(__file__)) + '/../models/' + 'object_recognition.pt'
     for epoch in range(1, args.epochs + 1):
+        print('=== epoch {} ===\n'.format(epoch))
         train(args, model, device, train_loader, optimizer, criterion, epoch)
         val_loss = validation(args, model, device, test_loader, criterion)
         if min_val_loss > val_loss:
