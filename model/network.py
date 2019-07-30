@@ -11,23 +11,23 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 
 class Network(nn.Module):
-    def __init__(self, class_num, hidden_num=256):
+    def __init__(self, class_num, hidden_num=64):
         super(Network, self).__init__()
         self.class_num = class_num
         # right
         self.min_x = -5.0
         self.max_x = 5.0
-        self.dx = 0.5
+        self.dx = 0.2
         self.dim_x = int((self.max_x - self.min_x) / self.dx) + 1
         # under
         self.min_y = -5.0
         self.max_y = 5.0
-        self.dy = 0.5
+        self.dy = 0.2
         self.dim_y = int((self.max_y - self.min_y) / self.dy) + 1
         # front
         self.min_z = -5.0
         self.max_z = 5.0
-        self.dz = 0.5
+        self.dz = 0.2
         self.dim_z = int((self.max_z - self.min_z) / self.dz) + 1
 
         self.min_yaw = -m.pi
@@ -36,22 +36,24 @@ class Network(nn.Module):
         self.dim_yaw = int((self.max_yaw - self.min_yaw) / self.dyaw) + 1
         self.min_h = 0.0
         self.max_h = 5.0
-        self.dh = 0.5
+        self.dh = 0.2
         self.dim_h = int((self.max_h - self.min_h) / self.dh) + 1
         self.min_w = 0.0
         self.max_w = 10.0
-        self.dw = 0.5
+        self.dw = 0.2
         self.dim_w = int((self.max_w - self.min_w) / self.dw) + 1
         self.min_l = 0.0
         self.max_l = 10.0
-        self.dl = 0.5
+        self.dl = 0.2
         self.dim_l = int((self.max_l - self.min_l) / self.dl) + 1
 
-        self.input_onehot = nn.Linear(self.class_num, 16)
-        self.input_onehot_bn = nn.BatchNorm1d(16, 16)
-        self.fc1 = nn.Linear(16, 1)
+        num_onehot_hidden = 16
+        self.num_3d_vector = 14
+        self.input_onehot = nn.Linear(self.class_num, num_onehot_hidden)
+        self.input_onehot_bn = nn.BatchNorm1d(num_onehot_hidden, num_onehot_hidden)
+        self.fc1 = nn.Linear(num_onehot_hidden, 1)
         self.bn1 = nn.BatchNorm1d(1, 1)
-        self.input_3d = nn.Linear(14, hidden_num)
+        self.input_3d = nn.Linear(self.num_3d_vector, hidden_num)
         self.input_3d_bn = nn.BatchNorm1d(hidden_num, hidden_num)
         self.fc2 = nn.Linear(hidden_num, hidden_num-1)
         self.bn2 = nn.BatchNorm1d(hidden_num-1, hidden_num-1)
@@ -68,8 +70,8 @@ class Network(nn.Module):
         self.prob_l = nn.Linear(hidden_num, self.dim_l)
 
     def forward(self, data):
-        a_3d_vec = data[:, 0:14]
-        a_3d_center = data[:, 14:17]
+        a_3d_vec = data[:, 0:self.num_3d_vector]
+        a_3d_center = data[:, self.num_3d_vector:self.num_3d_vector+3]
 
         onehot = torch.eye(self.class_num)[data[:, 17].long()]
         onehot = onehot.to(data.device)
@@ -78,7 +80,7 @@ class Network(nn.Module):
         a = self.input_onehot_bn(a)
         a = F.relu(a)
         a = self.fc1(a)
-        a = self.bn1(a)
+        # a = self.bn1(a)
         a = F.relu(a)
 
         b = self.input_3d(a_3d_vec)
