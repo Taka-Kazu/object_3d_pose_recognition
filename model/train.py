@@ -109,16 +109,17 @@ def validation(args, model, device, test_loader, criterion):
     test_loss /= len(test_loader)
     print('\nValidation set: Average loss: {:.4f}\n'.format(test_loss))
     validation_writer.add_scalar('loss', test_loss, training_step)
+    return test_loss
 
 def main():
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch')
-    parser.add_argument('--batch-size', type=int, default=16, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
                         help='input batch size for testing (default: 1000)')
-    parser.add_argument('--epochs', type=int, default=100, metavar='N',
-                        help='number of epochs to train (default: 10)')
+    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
+                        help='number of epochs to train (default: 1000)')
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.001)')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
@@ -158,12 +159,20 @@ def main():
 
     print('output log file to', log_directory)
 
+    min_val_loss = 1e6
+    model_file = os.path.dirname(os.path.abspath(__file__)) + '/../models/' + 'object_recognition.pt'
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, train_loader, optimizer, criterion, epoch)
-        validation(args, model, device, test_loader, criterion)
+        val_loss = validation(args, model, device, test_loader, criterion)
+        if min_val_loss > val_loss:
+            print('min val loss is updated: {} -> {}\n'.format(min_val_loss, val_loss))
+            min_val_loss = val_loss
+            if args.save_model:
+                torch.save(model.state_dict(), model_file)
+                print('model is saved to {}\n'.format(model_file))
+        else:
+            print('current min val loss is {}\n'.format(min_val_loss))
 
-    if (args.save_model):
-        torch.save(model.state_dict(),"object_recognition.pt")
 
     train_writer.close()
     validation_writer.close()
