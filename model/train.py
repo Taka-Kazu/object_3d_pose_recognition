@@ -42,6 +42,9 @@ def train(args, model, device, train_loader, optimizer, criterion, epoch):
         loss_y = criterion['classification'](prob_y, label_y)
         label_z = ((target[:, 2] - data[:, 16] - torch.tensor([model.min_z] * len(data), device=device)) / model.dz).long()
         loss_z = criterion['classification'](prob_z, label_z)
+        pi_2_tensor = torch.tensor([np.pi / 2.0] * len(data), device=device)
+        target[:, 3][target[:, 3] > pi_2_tensor] = target[:, 3][target[:, 3] > pi_2_tensor] - 2 * pi_2_tensor[target[:, 3] > pi_2_tensor]
+        target[:, 3][target[:, 3] < -pi_2_tensor] = target[:, 3][target[:, 3] < -pi_2_tensor] + 2 * pi_2_tensor[target[:, 3] < -pi_2_tensor]
         label_yaw = ((target[:, 3] - torch.tensor([model.min_yaw] * len(data), device=device)) / model.dyaw).long()
         loss_yaw = criterion['classification'](prob_yaw, label_yaw)
         label_h = ((target[:, 4] - torch.tensor([model.min_h] * len(data), device=device)) / model.dh).long()
@@ -96,6 +99,9 @@ def validation(args, model, device, test_loader, criterion):
             loss += criterion['classification'](prob_y, label_y)
             label_z = ((target[:, 2] - data[:, 16] - torch.tensor([model.min_z] * len(data), device=device)) / model.dz).long()
             loss += criterion['classification'](prob_z, label_z)
+            pi_2_tensor = torch.tensor([np.pi / 2.0] * len(data), device=device)
+            target[:, 3][target[:, 3] > pi_2_tensor] = target[:, 3][target[:, 3] > pi_2_tensor] - 2 * pi_2_tensor[target[:, 3] > pi_2_tensor]
+            target[:, 3][target[:, 3] < -pi_2_tensor] = target[:, 3][target[:, 3] < -pi_2_tensor] + 2 * pi_2_tensor[target[:, 3] < -pi_2_tensor]
             label_yaw = ((target[:, 3] - torch.tensor([model.min_yaw] * len(data), device=device)) / model.dyaw).long()
             loss += criterion['classification'](prob_yaw, label_yaw)
             label_h = ((target[:, 4] - torch.tensor([model.min_h] * len(data), device=device)) / model.dh).long()
@@ -160,7 +166,7 @@ def main():
 
     model = Network(3).to(device)
 
-    criterion = {'classification': F.nll_loss,
+    criterion = {'classification': nn.CrossEntropyLoss(),
                  'regression': nn.SmoothL1Loss()}
     # optimizer = optim.Adam(model.parameters(), lr=args.lr)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)

@@ -30,8 +30,8 @@ class Network(nn.Module):
         self.dz = 0.2
         self.dim_z = int((self.max_z - self.min_z) / self.dz) + 1
 
-        self.min_yaw = -m.pi
-        self.max_yaw = m.pi
+        self.min_yaw = -m.pi / 2.0
+        self.max_yaw = m.pi / 2.0
         self.dyaw = m.pi / 16.0
         self.dim_yaw = int((self.max_yaw - self.min_yaw) / self.dyaw) + 1
         self.min_h = 0.0
@@ -104,13 +104,13 @@ class Network(nn.Module):
         c = F.relu(c)
         # print(c)
 
-        prob_x = F.log_softmax(self.prob_x(c), dim=1)
-        prob_y = F.log_softmax(self.prob_y(c), dim=1)
-        prob_z = F.log_softmax(self.prob_z(c), dim=1)
-        prob_yaw = F.log_softmax(self.prob_yaw(c), dim=1)
-        prob_h = F.log_softmax(self.prob_h(c), dim=1)
-        prob_w = F.log_softmax(self.prob_w(c), dim=1)
-        prob_l = F.log_softmax(self.prob_l(c), dim=1)
+        prob_x = self.prob_x(c)
+        prob_y = self.prob_y(c)
+        prob_z = self.prob_z(c)
+        prob_yaw = self.prob_yaw(c)
+        prob_h = self.prob_h(c)
+        prob_w = self.prob_w(c)
+        prob_l = self.prob_l(c)
 
         return (prob_x, prob_y, prob_z, prob_yaw, prob_h, prob_w, prob_l)
 
