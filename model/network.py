@@ -115,14 +115,22 @@ class Network(nn.Module):
         return (prob_x, prob_y, prob_z, prob_yaw, prob_h, prob_w, prob_l)
 
     def convert_probability_to_prediction(self, prob_x, prob_y, prob_z, prob_yaw, prob_h, prob_w, prob_l):
+        dev = prob_x.device
         cpu = torch.device('cpu')
-        x = prob_x.to(cpu).numpy().argmax() * self.dx + self.min_x
-        y = prob_y.to(cpu).numpy().argmax() * self.dy + self.min_y
-        z = prob_z.to(cpu).numpy().argmax() * self.dz + self.min_z
-        yaw = prob_yaw.to(cpu).numpy().argmax() * self.dyaw + self.min_yaw
-        h = prob_h.to(cpu).numpy().argmax() * self.dh + self.min_h
-        w = prob_w.to(cpu).numpy().argmax() * self.dw + self.min_w
-        l = prob_l.to(cpu).numpy().argmax() * self.dl + self.min_l
+        x = prob_x.detach().to(cpu).numpy().argmax(axis=1) * self.dx + self.min_x
+        x = torch.Tensor(x).to(dev)
+        y = prob_y.detach().to(cpu).numpy().argmax(axis=1) * self.dy + self.min_y
+        y = torch.Tensor(y).to(dev)
+        z = prob_z.detach().to(cpu).numpy().argmax(axis=1) * self.dz + self.min_z
+        z = torch.Tensor(z).to(dev)
+        yaw = prob_yaw.detach().to(cpu).numpy().argmax(axis=1) * self.dyaw + self.min_yaw
+        yaw = torch.Tensor(yaw).to(dev)
+        h = prob_h.detach().to(cpu).numpy().argmax(axis=1) * self.dh + self.min_h
+        h = torch.Tensor(h).to(dev)
+        w = prob_w.detach().to(cpu).numpy().argmax(axis=1) * self.dw + self.min_w
+        w = torch.Tensor(w).to(dev)
+        l = prob_l.detach().to(cpu).numpy().argmax(axis=1) * self.dl + self.min_l
+        l = torch.Tensor(l).to(dev)
         return (x, y, z, yaw, h, w, l)
 
 if __name__ == '__main__':

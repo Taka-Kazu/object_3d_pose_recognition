@@ -37,20 +37,26 @@ def train(args, model, device, train_loader, optimizer, criterion, epoch):
         optimizer.zero_grad()
         prob_x, prob_y, prob_z, prob_yaw, prob_h, prob_w, prob_l = model(data)
         label_x = ((target[:, 0] - data[:, 14] - torch.tensor([model.min_x] * len(data), device=device)) / model.dx).long()
-        loss_x = criterion(prob_x, label_x)
+        loss_x = criterion['classification'](prob_x, label_x)
         label_y = ((target[:, 1] - data[:, 15] - torch.tensor([model.min_y] * len(data), device=device)) / model.dy).long()
-        loss_y = criterion(prob_y, label_y)
+        loss_y = criterion['classification'](prob_y, label_y)
         label_z = ((target[:, 2] - data[:, 16] - torch.tensor([model.min_z] * len(data), device=device)) / model.dz).long()
-        loss_z = criterion(prob_z, label_z)
+        loss_z = criterion['classification'](prob_z, label_z)
         label_yaw = ((target[:, 3] - torch.tensor([model.min_yaw] * len(data), device=device)) / model.dyaw).long()
-        loss_yaw = criterion(prob_yaw, label_yaw)
+        loss_yaw = criterion['classification'](prob_yaw, label_yaw)
         label_h = ((target[:, 4] - torch.tensor([model.min_h] * len(data), device=device)) / model.dh).long()
-        loss_h = criterion(prob_h, label_h)
+        loss_h = criterion['classification'](prob_h, label_h)
         label_w = ((target[:, 5] - torch.tensor([model.min_w] * len(data), device=device)) / model.dw).long()
-        loss_w = criterion(prob_w, label_w)
+        loss_w = criterion['classification'](prob_w, label_w)
         label_l = ((target[:, 6] - torch.tensor([model.min_l] * len(data), device=device)) / model.dl).long()
-        loss_l = criterion(prob_l, label_l)
+        loss_l = criterion['classification'](prob_l, label_l)
+        _, _, _, yaw, h, w, l = model.convert_probability_to_prediction(prob_x, prob_y, prob_z, prob_yaw, prob_h, prob_w, prob_l)
+        loss_yaw_reg = criterion['regression'](yaw, target[:, 3])
+        loss_h_reg = criterion['regression'](h, target[:, 4])
+        loss_w_reg = criterion['regression'](w, target[:, 5])
+        loss_l_reg = criterion['regression'](l, target[:, 6])
         loss = loss_x + loss_y + loss_z + loss_yaw + loss_h + loss_w + loss_l
+        loss += loss_yaw_reg + loss_h_reg + loss_w_reg + loss_l_reg
         loss.backward()
         optimizer.step()
         if batch_idx % args.log_interval == 0:
@@ -65,6 +71,10 @@ def train(args, model, device, train_loader, optimizer, criterion, epoch):
         train_writer.add_scalar('loss/h', loss_h, training_step)
         train_writer.add_scalar('loss/w', loss_w, training_step)
         train_writer.add_scalar('loss/l', loss_l, training_step)
+        train_writer.add_scalar('loss/yaw_reg', loss_yaw_reg, training_step)
+        train_writer.add_scalar('loss/h_reg', loss_h_reg, training_step)
+        train_writer.add_scalar('loss/w_reg', loss_w_reg, training_step)
+        train_writer.add_scalar('loss/l_reg', loss_l_reg, training_step)
         training_step += 1
 
 def validation(args, model, device, test_loader, criterion):
@@ -81,20 +91,26 @@ def validation(args, model, device, test_loader, criterion):
             prob_x, prob_y, prob_z, prob_yaw, prob_h, prob_w, prob_l = model(data)
             loss = 0
             label_x = ((target[:, 0] - data[:, 14] - torch.tensor([model.min_x] * len(data), device=device)) / model.dx).long()
-            loss += criterion(prob_x, label_x)
+            loss += criterion['classification'](prob_x, label_x)
             label_y = ((target[:, 1] - data[:, 15] - torch.tensor([model.min_y] * len(data), device=device)) / model.dy).long()
-            loss += criterion(prob_y, label_y)
+            loss += criterion['classification'](prob_y, label_y)
             label_z = ((target[:, 2] - data[:, 16] - torch.tensor([model.min_z] * len(data), device=device)) / model.dz).long()
-            loss += criterion(prob_z, label_z)
+            loss += criterion['classification'](prob_z, label_z)
             label_yaw = ((target[:, 3] - torch.tensor([model.min_yaw] * len(data), device=device)) / model.dyaw).long()
-            loss += criterion(prob_yaw, label_yaw)
+            loss += criterion['classification'](prob_yaw, label_yaw)
             label_h = ((target[:, 4] - torch.tensor([model.min_h] * len(data), device=device)) / model.dh).long()
-            loss += criterion(prob_h, label_h)
+            loss += criterion['classification'](prob_h, label_h)
             label_w = ((target[:, 5] - torch.tensor([model.min_w] * len(data), device=device)) / model.dw).long()
-            loss += criterion(prob_w, label_w)
+            loss += criterion['classification'](prob_w, label_w)
             label_l = ((target[:, 6] - torch.tensor([model.min_l] * len(data), device=device)) / model.dl).long()
-            loss += criterion(prob_l, label_l)
+            loss += criterion['classification'](prob_l, label_l)
             test_loss += loss
+            _, _, _, yaw, h, w, l = model.convert_probability_to_prediction(prob_x, prob_y, prob_z, prob_yaw, prob_h, prob_w, prob_l)
+            loss_yaw_reg = criterion['regression'](yaw, target[:, 3])
+            loss_h_reg = criterion['regression'](h, target[:, 4])
+            loss_w_reg = criterion['regression'](w, target[:, 5])
+            loss_l_reg = criterion['regression'](l, target[:, 6])
+            test_loss += loss_yaw_reg + loss_h_reg + loss_w_reg + loss_l_reg
     test_loss /= len(test_loader)
     print('\nValidation set: Average loss: {:.4f}\n'.format(test_loss))
     validation_writer.add_scalar('loss', test_loss, training_step)
@@ -144,8 +160,8 @@ def main():
 
     model = Network(3).to(device)
 
-    # criterion = nn.CrossEntropyLoss()
-    criterion = F.nll_loss
+    criterion = {'classification': F.nll_loss,
+                 'regression': nn.SmoothL1Loss()}
     # optimizer = optim.Adam(model.parameters(), lr=args.lr)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
