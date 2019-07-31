@@ -39,7 +39,7 @@ class Network(nn.Module):
         self.dh = 0.1
         self.dim_h = int((self.max_h - self.min_h) / self.dh) + 1
         self.min_w = 0.0
-        self.max_w = 10.0
+        self.max_w = 5.0
         self.dw = 0.1
         self.dim_w = int((self.max_w - self.min_w) / self.dw) + 1
         self.min_l = 0.0
