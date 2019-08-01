@@ -27,7 +27,8 @@ RUN pip3 install numpy \
                  keras \
                  opencv-python \
                  pillow \
-                 cython
+                 cython \
+                 scikit-learn
 
 # nvidia environment
 # for 1
