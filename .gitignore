@@ -6,3 +6,4 @@ logs
 *.so
 build
 *.pt
+*.pickle
