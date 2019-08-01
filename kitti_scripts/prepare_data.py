@@ -75,11 +75,11 @@ def get_closest_point(cloud):
 def perturb_bb2d(bb2d, ratio=0.1):
     bb2d_ = bb2d
     h = bb2d.ymax - bb2d.ymin
-    w = bb2d.xmin - bb2d.xmax
+    w = bb2d.xmax - bb2d.xmin
     center_x = (bb2d.xmin + bb2d.xmax) / 2.0
     center_y = (bb2d.ymin + bb2d.ymax) / 2.0
-    center_x_ = center_x + w * ratio * (np.random.random() * 2 - 1)
-    center_y_ = center_y + h * ratio * (np.random.random() * 2 - 1)
+    center_x_ = center_x + w * ratio * (2 * np.random.random() - 1)
+    center_y_ = center_y + h * ratio * (2 * np.random.random() - 1)
     h_ = h * (1 + ratio * (2 * np.random.random() - 1))
     w_ = w * (1 + ratio * (2 * np.random.random() - 1))
     bb2d_.xmin = center_x_ - w_ / 2.0
@@ -249,6 +249,7 @@ def get_data_from_file(data_path, file_index, occlusion_list, perturbation_flag=
                 else:
                     data = data_
                 print('data was added to dataset')
+                pprint(data)
     if data is not None:
         if len(data.shape) == 1:
             data = data.reshape(1, -1)
