@@ -289,7 +289,7 @@ if __name__ == '__main__':
     parser.add_argument('--show_image', action='store_true')
     parser.add_argument('--show_pointcloud', action='store_true')
     parser.add_argument('--use_mayavi', action='store_true')
-    parser.add_argument('--max_distance_limit', help='default: 25.0[m]', default=25.0)
+    parser.add_argument('--max_distance_limit', help='default: 25.0[m]', type=float, default=25.0)
     parser.add_argument('--min_distance_limit', help='default: 1.0[m]', default=1.0)
     parser.add_argument('--occlusion_list', help='default: 0,1,2', default='0,1,2')
     parser.add_argument('--demo', action='store_true')
